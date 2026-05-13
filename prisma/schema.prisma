@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PROFESSOR
+  GESTAO
+}
+
+enum OccurrenceReason {
+  INDISCIPLINA
+  USO_CELULAR
+  SAIU_SEM_AUTORIZACAO
+  NAO_FEZ_ATIVIDADE
+  LINGUAGEM_IMPROPRIA
+  BULLYING
+  AGRESSAO
+  SUBSTANCIAS_ILICITAS
+  DESACATO_FUNCIONARIO
+  CONVERSAS_PARALELAS
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  role         UserRole
+  occurrences  Occurrence[]  @relation("AuthorOccurrences")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model SchoolClass {
+  id           String        @id @default(cuid())
+  name         String
+  students     Student[]
+  occurrences  Occurrence[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Student {
+  id           String        @id @default(cuid())
+  name         String
+  ra           String        @unique
+  classId      String
+  class        SchoolClass   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  occurrences  Occurrence[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([classId])
+}
+
+model Occurrence {
+  id              String             @id @default(cuid())
+  controlNumber   String             @unique
+  authorId        String
+  author          User               @relation("AuthorOccurrences", fields: [authorId], references: [id])
+  classId         String
+  schoolClass     SchoolClass        @relation(fields: [classId], references: [id])
+  studentId       String
+  student         Student            @relation(fields: [studentId], references: [id])
+  registeredAt    DateTime           @default(now())
+  occurredAt      DateTime
+  reason          OccurrenceReason
+  details         String?
+  parentName      String?
+  parentPhone     String?
+  parentEmail     String?
+  actionTaken     String?
+  attachments     OccurrenceAttachment[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([authorId])
+  @@index([classId])
+  @@index([registeredAt])
+}
+
+model OccurrenceAttachment {
+  id            String      @id @default(cuid())
+  occurrenceId  String
+  occurrence    Occurrence  @relation(fields: [occurrenceId], references: [id], onDelete: Cascade)
+  fileName      String
+  storedPath    String
+  mimeType      String
+  sizeBytes     Int
+  createdAt     DateTime    @default(now())
+
+  @@index([occurrenceId])
+}
