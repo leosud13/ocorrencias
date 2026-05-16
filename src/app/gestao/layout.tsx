@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { UserRole } from "@prisma/client";
 import { SignOutButton } from "@/components/sign-out-button";
+import { CadastrosMenu } from "@/components/navigation/cadastros-menu";
 
 export default async function GestaoLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -26,22 +27,7 @@ export default async function GestaoLayout({ children }: { children: React.React
               <Link className="text-brand-700 hover:underline" href="/gestao/relatorios">
                 Relatórios
               </Link>
-              <details className="group relative">
-                <summary className="cursor-pointer list-none text-brand-700 hover:underline">
-                  Cadastros
-                </summary>
-                <div className="absolute left-0 top-6 z-20 min-w-44 rounded-lg border border-slate-200 bg-white p-2 shadow-lg group-open:block">
-                  <Link className="block rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100" href="/gestao/turmas">
-                    Turmas
-                  </Link>
-                  <Link className="block rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100" href="/gestao/alunos">
-                    Alunos
-                  </Link>
-                  <Link className="block rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100" href="/gestao/usuarios">
-                    Usuários
-                  </Link>
-                </div>
-              </details>
+              <CadastrosMenu />
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm text-slate-600">
