@@ -23,21 +23,25 @@ export default async function GestaoLayout({ children }: { children: React.React
               <Link className="text-brand-700 hover:underline" href="/gestao/ocorrencias">
                 Ocorrências
               </Link>
-              <Link className="text-brand-700 hover:underline" href="/gestao/ocorrencias/nova">
-                Nova ocorrência
-              </Link>
               <Link className="text-brand-700 hover:underline" href="/gestao/relatorios">
                 Relatórios
               </Link>
-              <Link className="text-brand-700 hover:underline" href="/gestao/turmas">
-                Turmas
-              </Link>
-              <Link className="text-brand-700 hover:underline" href="/gestao/alunos">
-                Alunos
-              </Link>
-              <Link className="text-brand-700 hover:underline" href="/gestao/usuarios">
-                Usuários
-              </Link>
+              <details className="group relative">
+                <summary className="cursor-pointer list-none text-brand-700 hover:underline">
+                  Cadastros
+                </summary>
+                <div className="absolute left-0 top-6 z-20 min-w-44 rounded-lg border border-slate-200 bg-white p-2 shadow-lg group-open:block">
+                  <Link className="block rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100" href="/gestao/turmas">
+                    Turmas
+                  </Link>
+                  <Link className="block rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100" href="/gestao/alunos">
+                    Alunos
+                  </Link>
+                  <Link className="block rounded-md px-3 py-2 text-slate-700 hover:bg-slate-100" href="/gestao/usuarios">
+                    Usuários
+                  </Link>
+                </div>
+              </details>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm text-slate-600">
@@ -53,6 +57,12 @@ export default async function GestaoLayout({ children }: { children: React.React
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <Link
+        href="/gestao/ocorrencias/nova"
+        className="fixed bottom-6 right-6 z-50 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-700"
+      >
+        + Nova ocorrência
+      </Link>
     </div>
   );
 }

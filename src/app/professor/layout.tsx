@@ -29,9 +29,6 @@ export default async function ProfessorLayout({
               <Link className="text-brand-700 hover:underline" href="/professor/ocorrencias">
                 Minhas ocorrências
               </Link>
-              <Link className="text-brand-700 hover:underline" href="/professor/ocorrencias/nova">
-                Nova ocorrência
-              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm text-slate-600">
@@ -47,6 +44,12 @@ export default async function ProfessorLayout({
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <Link
+        href="/professor/ocorrencias/nova"
+        className="fixed bottom-6 right-6 z-50 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-700"
+      >
+        + Nova ocorrência
+      </Link>
     </div>
   );
 }
