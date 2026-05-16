@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { OccurrenceReason, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { formatDateTimeBR } from "@/lib/date-time";
 import { getSession } from "@/lib/session";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 import { buildOccurrenceWhere, parseReportQuery } from "@/lib/report-filters";
@@ -35,8 +36,8 @@ function rowFromOccurrence(o: {
 }) {
   return {
     "Nº controle": o.controlNumber,
-    "Data registro": o.registeredAt.toISOString(),
-    "Data ocorrência": o.occurredAt.toISOString(),
+    "Data registro": formatDateTimeBR(o.registeredAt),
+    "Data ocorrência": formatDateTimeBR(o.occurredAt),
     Turma: o.schoolClass.name,
     Aluno: o.student.name,
     RA: o.student.ra,

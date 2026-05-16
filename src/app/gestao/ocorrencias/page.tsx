@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 
 export default async function GestaoOccurrencesPage() {
@@ -56,7 +57,7 @@ export default async function GestaoOccurrencesPage() {
                 <tr key={o.id} className="border-t border-slate-100">
                   <td className="px-4 py-3 font-mono text-xs">{o.controlNumber}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    {o.registeredAt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                    {formatDateTimeBR(o.registeredAt)}
                   </td>
                   <td className="px-4 py-3">{o.author.name}</td>
                   <td className="px-4 py-3">{o.schoolClass.name}</td>

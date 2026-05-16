@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
+import { getBrasiliaYear } from "@/lib/date-time";
 
 export async function generateControlNumber(): Promise<string> {
-  const year = new Date().getFullYear();
+  const year = getBrasiliaYear();
   const prefix = `OCC-${year}-`;
 
   const last = await prisma.occurrence.findFirst({

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { formatDateInputBR } from "@/lib/date-time";
 import { getSession } from "@/lib/session";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 import { buildOccurrenceWhere, parseReportQuery } from "@/lib/report-filters";
@@ -105,7 +106,7 @@ export async function GET(req: Request) {
 
   const dayCounts = new Map<string, number>();
   for (const d of dates) {
-    const key = d.occurredAt.toISOString().slice(0, 10);
+    const key = formatDateInputBR(d.occurredAt);
     dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
   }
   const series = Array.from(dayCounts.entries())

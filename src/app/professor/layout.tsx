@@ -46,9 +46,11 @@ export default async function ProfessorLayout({
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
       <Link
         href="/professor/ocorrencias/nova"
-        className="fixed bottom-6 right-6 z-50 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-700"
+        aria-label="Adicionar nova ocorrência"
+        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-3xl font-semibold leading-none text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-700 md:bottom-6 md:right-6 md:h-auto md:w-auto md:px-5 md:py-3 md:text-sm"
       >
-        + Nova ocorrência
+        <span aria-hidden="true">+</span>
+        <span className="hidden md:inline">&nbsp;Nova ocorrência</span>
       </Link>
     </div>
   );

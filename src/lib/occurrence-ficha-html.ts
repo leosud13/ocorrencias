@@ -1,4 +1,5 @@
 import type { OccurrenceReason } from "@prisma/client";
+import { formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 
 export type FichaOccurrence = {
@@ -31,7 +32,7 @@ function escMultiline(s: string | null | undefined): string {
 }
 
 function fmtDate(d: Date): string {
-  return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  return formatDateTimeBR(d);
 }
 
 export function buildOccurrenceFichaHtml(o: FichaOccurrence): string {

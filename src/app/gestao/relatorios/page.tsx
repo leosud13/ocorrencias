@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatDateInputBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_OPTIONS } from "@/lib/occurrence-reasons";
 
 type Classe = { id: string; name: string };
@@ -18,8 +19,7 @@ function defaultRange() {
   const to = new Date();
   const from = new Date();
   from.setDate(from.getDate() - 30);
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  return { from: iso(from), to: iso(to) };
+  return { from: formatDateInputBR(from), to: formatDateInputBR(to) };
 }
 
 function BarList(items: { label: string; count: number; pct?: number }[], max?: number) {

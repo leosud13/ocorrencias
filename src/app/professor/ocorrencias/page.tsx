@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/db";
+import { formatDateBR, formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 
 export default async function ProfessorOccurrencesPage() {
@@ -61,10 +62,10 @@ export default async function ProfessorOccurrencesPage() {
               <tr key={o.id} className="border-t border-slate-100">
                 <td className="px-4 py-3 font-mono text-xs">{o.controlNumber}</td>
                 <td className="px-4 py-3">
-                  {o.registeredAt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                  {formatDateTimeBR(o.registeredAt)}
                 </td>
                 <td className="px-4 py-3">
-                  {o.occurredAt.toLocaleDateString("pt-BR")}
+                  {formatDateBR(o.occurredAt)}
                 </td>
                 <td className="px-4 py-3">{o.schoolClass.name}</td>
                 <td className="px-4 py-3">{o.student.name}</td>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { dateTimeInputBRToISOString, formatDateTimeInputBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_OPTIONS } from "@/lib/occurrence-reasons";
 
 type Classe = { id: string; name: string };
@@ -25,11 +26,7 @@ export function OccurrenceForm({
   const [studentId, setStudentId] = useState("");
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
-  const [occurredAt, setOccurredAt] = useState(() => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-  });
+  const [occurredAt, setOccurredAt] = useState(() => formatDateTimeInputBR());
   const [files, setFiles] = useState<FileList | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +58,7 @@ export function OccurrenceForm({
     fd.set("classId", classId);
     fd.set("studentId", studentId);
     fd.set("reason", reason);
-    fd.set("occurredAt", new Date(occurredAt).toISOString());
+    fd.set("occurredAt", dateTimeInputBRToISOString(occurredAt));
     if (details.trim()) fd.set("details", details.trim());
     if (files) {
       for (let i = 0; i < files.length; i++) {

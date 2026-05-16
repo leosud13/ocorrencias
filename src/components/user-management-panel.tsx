@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatDateTimeBR } from "@/lib/date-time";
 
 type UserRow = {
   id: string;
@@ -24,7 +25,7 @@ const ROLE_LABELS = Object.fromEntries(ROLE_OPTIONS.map((role) => [role.value, r
 
 function formatDate(value: string | null) {
   if (!value) return "-";
-  return new Date(value).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  return formatDateTimeBR(new Date(value));
 }
 
 export function UserManagementPanel() {

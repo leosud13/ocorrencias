@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 
 type Props = { params: { id: string } };
@@ -55,13 +56,11 @@ export default async function ProfessorOccurrenceDetailPage({ params }: Props) {
         </div>
         <div>
           <dt className="text-xs font-medium uppercase text-slate-500">Data de registro</dt>
-          <dd className="text-sm text-slate-900">
-            {o.registeredAt.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
-          </dd>
+          <dd className="text-sm text-slate-900">{formatDateTimeBR(o.registeredAt)}</dd>
         </div>
         <div>
           <dt className="text-xs font-medium uppercase text-slate-500">Data da ocorrência</dt>
-          <dd className="text-sm text-slate-900">{o.occurredAt.toLocaleString("pt-BR")}</dd>
+          <dd className="text-sm text-slate-900">{formatDateTimeBR(o.occurredAt)}</dd>
         </div>
         <div>
           <dt className="text-xs font-medium uppercase text-slate-500">Turma</dt>

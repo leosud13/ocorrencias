@@ -1,4 +1,5 @@
 import { OccurrenceReason, Prisma } from "@prisma/client";
+import { dateRangeToBrasiliaUtc } from "@/lib/date-time";
 
 const REASON_SET = new Set<string>(Object.values(OccurrenceReason));
 
@@ -30,10 +31,7 @@ export function parseReportQuery(searchParams: URLSearchParams): ReportQueryInpu
 
 export function buildOccurrenceWhere(q: ReportQueryInput): Prisma.OccurrenceWhereInput {
   const where: Prisma.OccurrenceWhereInput = {
-    occurredAt: {
-      gte: new Date(`${q.from}T00:00:00.000Z`),
-      lte: new Date(`${q.to}T23:59:59.999Z`),
-    },
+    occurredAt: dateRangeToBrasiliaUtc(q.from, q.to),
   };
   if (q.classId) where.classId = q.classId;
   if (q.studentId) where.studentId = q.studentId;
