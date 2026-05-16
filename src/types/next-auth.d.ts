@@ -15,11 +15,13 @@ declare module "next-auth" {
 
   interface User {
     role: UserRole;
+    isBlocked?: boolean;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     role?: UserRole;
+    isBlocked?: boolean;
   }
 }

@@ -33,39 +33,26 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           image: user.imageUrl,
           role: user.role,
-        } as NextAuthUser & { role: UserRole };
+          isBlocked: user.isBlocked,
+        } as NextAuthUser & { role: UserRole; isBlocked: boolean };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        const u = user as AdapterUser & { role?: UserRole };
+        const u = user as AdapterUser & { role?: UserRole; isBlocked?: boolean };
         token.sub = u.id;
         token.role = u.role;
+        token.isBlocked = u.isBlocked;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        const id = token.sub as string;
-        const user = await prisma.user.findUnique({
-          where: { id },
-          select: { id: true, email: true, name: true, imageUrl: true, role: true, isBlocked: true },
-        });
-
-        if (user) {
-          session.user.id = user.id;
-          session.user.email = user.email;
-          session.user.name = user.name;
-          session.user.image = user.imageUrl;
-          session.user.role = user.role;
-          session.user.isBlocked = user.isBlocked;
-        } else {
-          session.user.id = id;
-          session.user.role = token.role as UserRole;
-          session.user.isBlocked = true;
-        }
+        session.user.id = token.sub as string;
+        session.user.role = token.role as UserRole;
+        session.user.isBlocked = Boolean(token.isBlocked);
       }
       return session;
     },

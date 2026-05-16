@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 
 export default async function GestaoDashboardPage() {
-  const [total, lastWeek, pendingFollowUp] = await Promise.all([
+  const [total, lastWeek, pendingFollowUp] = await prisma.$transaction([
     prisma.occurrence.count(),
     prisma.occurrence.count({
       where: {
