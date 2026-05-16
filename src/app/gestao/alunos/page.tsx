@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type Classe = { id: string; name: string };
 type Student = {
@@ -27,11 +27,11 @@ export default function AlunosPage() {
     if (res.ok) setClasses(await res.json());
   }
 
-  async function loadStudents() {
+  const loadStudents = useCallback(async () => {
     const q = filterClass ? `?classId=${encodeURIComponent(filterClass)}` : "";
     const res = await fetch(`/api/gestao/students${q}`);
     if (res.ok) setStudents(await res.json());
-  }
+  }, [filterClass]);
 
   useEffect(() => {
     loadClasses();
@@ -39,7 +39,7 @@ export default function AlunosPage() {
 
   useEffect(() => {
     loadStudents();
-  }, [filterClass]);
+  }, [loadStudents]);
 
   async function createStudent(e: React.FormEvent) {
     e.preventDefault();

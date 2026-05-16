@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 

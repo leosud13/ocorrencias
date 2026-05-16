@@ -36,7 +36,7 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "Arquivo ausente no servidor" }, { status: 404 });
   }
 
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": att.mimeType,
       "Content-Disposition": `attachment; filename="${encodeURIComponent(att.fileName)}"`,

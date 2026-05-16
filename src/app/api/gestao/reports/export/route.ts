@@ -106,7 +106,7 @@ export async function GET(req: Request) {
       }
     }
 
-    const resumoRows = [...summary.values()].map((s) => ({
+    const resumoRows = Array.from(summary.values()).map((s) => ({
       Aluno: s.name,
       RA: s.ra,
       Turma: s.className,
@@ -127,7 +127,7 @@ export async function GET(req: Request) {
 
     let sheets = 0;
     const maxSheets = 28;
-    for (const [, list] of byStudent) {
+    for (const list of Array.from(byStudent.values())) {
       if (sheets >= maxSheets) break;
       const first = list[0];
       const label = `${first.student.name} (${first.student.ra})`;
@@ -154,7 +154,7 @@ export async function GET(req: Request) {
       ? `relatorio-ocorrencias-total_${q.from}_${q.to}.xlsx`
       : `relatorio-ocorrencias-por-aluno_${q.from}_${q.to}.xlsx`;
 
-  return new NextResponse(buf, {
+  return new NextResponse(new Uint8Array(buf), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${fname}"`,

@@ -48,8 +48,8 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  const classIds = [...new Set(byClass.map((b) => b.classId))];
-  const studentIds = [...new Set(byStudent.map((b) => b.studentId))];
+  const classIds = Array.from(new Set(byClass.map((b) => b.classId)));
+  const studentIds = Array.from(new Set(byStudent.map((b) => b.studentId)));
 
   const [classes, students] = await Promise.all([
     classIds.length
@@ -108,7 +108,7 @@ export async function GET(req: Request) {
     const key = d.occurredAt.toISOString().slice(0, 10);
     dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
   }
-  const series = [...dayCounts.entries()]
+  const series = Array.from(dayCounts.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, count]) => ({ date, count }));
 
