@@ -6,7 +6,7 @@ import { SignOutButton } from "@/components/sign-out-button";
 
 export default async function GestaoLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  if (!session?.user || session.user.role !== UserRole.GESTAO) {
+  if (!session?.user || session.user.role !== UserRole.GESTAO || session.user.isBlocked) {
     redirect("/login");
   }
 
@@ -35,10 +35,19 @@ export default async function GestaoLayout({ children }: { children: React.React
               <Link className="text-brand-700 hover:underline" href="/gestao/alunos">
                 Alunos
               </Link>
+              <Link className="text-brand-700 hover:underline" href="/gestao/usuarios">
+                Usuários
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm text-slate-600">
-            <span>{session.user.name}</span>
+            {session.user.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={session.user.image} alt="" className="h-8 w-8 rounded-full object-cover" />
+            )}
+            <Link className="text-brand-700 hover:underline" href="/perfil">
+              {session.user.name}
+            </Link>
             <SignOutButton />
           </div>
         </div>

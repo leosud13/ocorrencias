@@ -61,6 +61,11 @@ export default async function GestaoDashboardPage() {
               Relatórios e exportação Excel
             </Link>
           </li>
+          <li>
+            <Link href="/gestao/usuarios" className="text-brand-700 hover:underline">
+              Cadastro e gestão de usuários
+            </Link>
+          </li>
         </ul>
       </div>
     </div>

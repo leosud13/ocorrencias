@@ -10,6 +10,7 @@ datasource db {
 enum UserRole {
   PROFESSOR
   GESTAO
+  AGENTE_ESCOLAR
 }
 
 enum OccurrenceReason {
@@ -31,6 +32,9 @@ model User {
   passwordHash String
   name         String
   role         UserRole
+  imageUrl     String?
+  isBlocked    Boolean       @default(false)
+  blockedAt    DateTime?
   occurrences  Occurrence[]  @relation("AuthorOccurrences")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt

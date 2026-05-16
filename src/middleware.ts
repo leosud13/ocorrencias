@@ -17,6 +17,16 @@ export async function middleware(req: NextRequest) {
     if (token?.role === UserRole.PROFESSOR) {
       return NextResponse.redirect(new URL("/professor/ocorrencias", req.url));
     }
+    if (token?.role === UserRole.AGENTE_ESCOLAR) {
+      return NextResponse.redirect(new URL("/professor/ocorrencias", req.url));
+    }
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/perfil")) {
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
     return NextResponse.next();
   }
 
@@ -24,7 +34,7 @@ export async function middleware(req: NextRequest) {
     if (!token) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
-    if (token.role !== UserRole.PROFESSOR) {
+    if (token.role !== UserRole.PROFESSOR && token.role !== UserRole.AGENTE_ESCOLAR) {
       return NextResponse.redirect(new URL("/gestao", req.url));
     }
     return NextResponse.next();
@@ -44,5 +54,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/professor/:path*", "/gestao/:path*", "/login"],
+  matcher: ["/professor/:path*", "/gestao/:path*", "/perfil/:path*", "/login"],
 };

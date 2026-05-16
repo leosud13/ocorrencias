@@ -6,6 +6,7 @@ import { OccurrenceReason, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { generateControlNumber } from "@/lib/control-number";
+import { canRegisterOccurrences } from "@/lib/user-roles";
 
 const REASONS = new Set<string>(Object.values(OccurrenceReason));
 
@@ -40,7 +41,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getSession();
-  if (!session?.user?.id || (session.user.role !== UserRole.PROFESSOR && session.user.role !== UserRole.GESTAO)) {
+  if (!session?.user?.id || session.user.isBlocked || !canRegisterOccurrences(session.user.role)) {
     return NextResponse.json({ error: "Sem permissão para registrar ocorrências." }, { status: 403 });
   }
 

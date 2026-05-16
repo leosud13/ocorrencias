@@ -7,6 +7,9 @@ export default async function Home() {
   if (!session?.user) {
     redirect("/login");
   }
+  if (session.user.isBlocked) {
+    redirect("/login");
+  }
   if (session.user.role === UserRole.GESTAO) {
     redirect("/gestao");
   }

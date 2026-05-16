@@ -9,7 +9,7 @@ type Params = { params: { id: string } };
 
 export async function GET(_req: Request, { params }: Params) {
   const session = await getSession();
-  if (!session?.user?.id) {
+  if (!session?.user?.id || session.user.isBlocked) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 

@@ -7,7 +7,7 @@ type Params = { params: { id: string } };
 
 export async function GET(_req: Request, { params }: Params) {
   const session = await getSession();
-  if (!session?.user?.id) {
+  if (!session?.user?.id || session.user.isBlocked) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
@@ -25,7 +25,7 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "Não encontrada" }, { status: 404 });
   }
 
-  if (session.user.role === UserRole.PROFESSOR && row.authorId !== session.user.id) {
+  if (session.user.role !== UserRole.GESTAO && row.authorId !== session.user.id) {
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
 
@@ -34,7 +34,7 @@ export async function GET(_req: Request, { params }: Params) {
 
 export async function PATCH(req: Request, { params }: Params) {
   const session = await getSession();
-  if (!session?.user?.id || session.user.role !== UserRole.GESTAO) {
+  if (!session?.user?.id || session.user.role !== UserRole.GESTAO || session.user.isBlocked) {
     return NextResponse.json({ error: "Somente a gestão pode atualizar esta ocorrência." }, { status: 403 });
   }
 
