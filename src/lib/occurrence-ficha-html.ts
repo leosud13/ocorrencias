@@ -15,6 +15,11 @@ export type FichaOccurrence = {
   author: { name: string; email: string | null };
   schoolClass: { name: string };
   student: { name: string; ra: string };
+  studentId?: string;
+};
+
+type FichaContentOptions = {
+  includeTratativa?: boolean;
 };
 
 const FICHA_STYLES = `
@@ -63,7 +68,23 @@ function fmtDate(d: Date): string {
   return formatDateTimeBR(d);
 }
 
-function buildOccurrenceFichaContent(o: FichaOccurrence, heading: "h1" | "h2" = "h1"): string {
+function buildTratativaTable(o: FichaOccurrence): string {
+  return `
+  <table>
+    <tr><th colspan="2">Tratativa / contato com a família</th></tr>
+    <tr><th>Responsável pelo aluno</th><td>${esc(o.parentName)}</td></tr>
+    <tr><th>Telefone</th><td>${esc(o.parentPhone)}</td></tr>
+    <tr><th>E-mail</th><td>${esc(o.parentEmail)}</td></tr>
+    <tr><th>Ação tomada / encaminhamento</th><td>${escMultiline(o.actionTaken)}</td></tr>
+  </table>`;
+}
+
+function buildOccurrenceFichaContent(
+  o: FichaOccurrence,
+  heading: "h1" | "h2" = "h1",
+  options: FichaContentOptions = {},
+): string {
+  const includeTratativa = options.includeTratativa ?? true;
   const motivo = OCCURRENCE_REASON_LABELS[o.reason];
   const title =
     heading === "h1"
@@ -85,14 +106,16 @@ function buildOccurrenceFichaContent(o: FichaOccurrence, heading: "h1" | "h2" = 
     <tr><th>Motivo</th><td>${esc(motivo)}</td></tr>
     <tr><th>Detalhes</th><td>${escMultiline(o.details)}</td></tr>
   </table>
+  ${includeTratativa ? buildTratativaTable(o) : ""}`;
+}
 
-  <table>
-    <tr><th colspan="2">Tratativa / contato com a família</th></tr>
-    <tr><th>Responsável pelo aluno</th><td>${esc(o.parentName)}</td></tr>
-    <tr><th>Telefone</th><td>${esc(o.parentPhone)}</td></tr>
-    <tr><th>E-mail</th><td>${esc(o.parentEmail)}</td></tr>
-    <tr><th>Ação tomada / encaminhamento</th><td>${escMultiline(o.actionTaken)}</td></tr>
-  </table>`;
+function countOccurrencesByStudent(items: FichaOccurrence[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const o of items) {
+    const key = o.studentId ?? o.student.ra;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
 }
 
 function buildOccurrenceFichaSignatures(): string {
@@ -164,8 +187,13 @@ export function buildOccurrenceFichaHtml(o: FichaOccurrence): string {
 }
 
 export function buildBatchOccurrenceFichaHtml(items: FichaOccurrence[]): string {
+  const countByStudent = countOccurrencesByStudent(items);
   const sections = items
-    .map((o) => `<div class="ficha-item">${buildOccurrenceFichaContent(o, "h2")}</div>`)
+    .map((o) => {
+      const studentKey = o.studentId ?? o.student.ra;
+      const includeTratativa = (countByStudent.get(studentKey) ?? 0) <= 1;
+      return `<div class="ficha-item">${buildOccurrenceFichaContent(o, "h2", { includeTratativa })}</div>`;
+    })
     .join("\n");
 
   return `<!DOCTYPE html>

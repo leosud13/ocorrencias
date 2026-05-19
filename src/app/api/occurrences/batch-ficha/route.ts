@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     include: {
       author: { select: { name: true, email: true } },
       schoolClass: { select: { name: true } },
-      student: { select: { name: true, ra: true } },
+      student: { select: { id: true, name: true, ra: true } },
     },
   });
 
@@ -55,6 +55,7 @@ export async function GET(req: Request) {
       author: { name: o.author.name, email: o.author.email },
       schoolClass: { name: o.schoolClass.name },
       student: { name: o.student.name, ra: o.student.ra },
+      studentId: o.student.id,
     })),
   );
 
