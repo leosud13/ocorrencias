@@ -17,6 +17,28 @@ export type FichaOccurrence = {
   student: { name: string; ra: string };
 };
 
+const FICHA_STYLES = `
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 24px; color: #0f172a; line-height: 1.45; }
+  h1 { font-size: 1.35rem; margin: 0 0 4px; }
+  .sub { color: #64748b; font-size: 0.9rem; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.95rem; }
+  th, td { border: 1px solid #cbd5e1; padding: 8px 10px; vertical-align: top; }
+  th { width: 28%; background: #f8fafc; text-align: left; font-weight: 600; color: #334155; }
+  .block { margin-top: 28px; page-break-inside: avoid; }
+  .sig-title { font-weight: 600; margin-bottom: 8px; }
+  .line { border-bottom: 1px solid #0f172a; height: 48px; margin-top: 8px; }
+  .hint { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+  .ficha { margin-bottom: 48px; padding-bottom: 32px; border-bottom: 2px dashed #e2e8f0; }
+  .ficha:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  @media print {
+    body { padding: 12px; }
+    .no-print { display: none !important; }
+    .ficha { page-break-after: always; margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .ficha:last-child { page-break-after: auto; }
+  }
+`;
+
 function esc(s: string | null | undefined): string {
   if (s == null || s === "") return "—";
   return s
@@ -35,35 +57,10 @@ function fmtDate(d: Date): string {
   return formatDateTimeBR(d);
 }
 
-export function buildOccurrenceFichaHtml(o: FichaOccurrence): string {
+export function buildOccurrenceFichaSection(o: FichaOccurrence): string {
   const motivo = OCCURRENCE_REASON_LABELS[o.reason];
 
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ficha ${esc(o.controlNumber)}</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 24px; color: #0f172a; line-height: 1.45; }
-    h1 { font-size: 1.35rem; margin: 0 0 4px; }
-    .sub { color: #64748b; font-size: 0.9rem; margin-bottom: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.95rem; }
-    th, td { border: 1px solid #cbd5e1; padding: 8px 10px; vertical-align: top; }
-    th { width: 28%; background: #f8fafc; text-align: left; font-weight: 600; color: #334155; }
-    .block { margin-top: 28px; page-break-inside: avoid; }
-    .sig-title { font-weight: 600; margin-bottom: 8px; }
-    .line { border-bottom: 1px solid #0f172a; height: 48px; margin-top: 8px; }
-    .hint { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
-    @media print {
-      body { padding: 12px; }
-      .no-print { display: none !important; }
-    }
-  </style>
-</head>
-<body>
-  <p class="no-print"><button type="button" onclick="window.print()" style="padding:8px 14px;font-size:14px;cursor:pointer;border-radius:8px;border:1px solid #cbd5e1;background:#fff;">Imprimir / salvar em PDF</button></p>
+  return `
   <h1>Ficha de ocorrência escolar</h1>
   <p class="sub">Nº de controle: <strong>${esc(o.controlNumber)}</strong></p>
 
@@ -106,9 +103,44 @@ export function buildOccurrenceFichaHtml(o: FichaOccurrence): string {
     <div class="sig-title">Responsável pelo aluno</div>
     <div class="line"></div>
     <div class="hint">Nome completo — documento de identificação conforme política da escola</div>
-  </div>
+  </div>`;
+}
 
+export function buildOccurrenceFichaHtml(o: FichaOccurrence): string {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ficha ${esc(o.controlNumber)}</title>
+  <style>${FICHA_STYLES}</style>
+</head>
+<body>
+  <p class="no-print"><button type="button" onclick="window.print()" style="padding:8px 14px;font-size:14px;cursor:pointer;border-radius:8px;border:1px solid #cbd5e1;background:#fff;">Imprimir / salvar em PDF</button></p>
+  <div class="ficha">${buildOccurrenceFichaSection(o)}</div>
   <p class="no-print hint" style="margin-top:32px">Use o botão acima ou Ctrl+P. Em “Destino”, escolha “Salvar como PDF” se desejar arquivo digital.</p>
+</body>
+</html>`;
+}
+
+export function buildBatchOccurrenceFichaHtml(items: FichaOccurrence[]): string {
+  const sections = items
+    .map((o) => `<div class="ficha">${buildOccurrenceFichaSection(o)}</div>`)
+    .join("\n");
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fichas de ocorrência (${items.length})</title>
+  <style>${FICHA_STYLES}</style>
+</head>
+<body>
+  <p class="no-print"><button type="button" onclick="window.print()" style="padding:8px 14px;font-size:14px;cursor:pointer;border-radius:8px;border:1px solid #cbd5e1;background:#fff;">Imprimir todas / salvar em PDF</button></p>
+  <p class="no-print sub">${items.length} ficha(s) — documento único para impressão e assinatura.</p>
+  ${sections}
+  <p class="no-print hint" style="margin-top:32px">Use o botão acima ou Ctrl+P. Em “Destino”, escolha “Salvar como PDF”.</p>
 </body>
 </html>`;
 }
