@@ -31,11 +31,17 @@ const FICHA_STYLES = `
   .hint { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
   .ficha { margin-bottom: 48px; padding-bottom: 32px; border-bottom: 2px dashed #e2e8f0; }
   .ficha:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .ficha-item { margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px dashed #e2e8f0; }
+  .ficha-item:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .ficha-item h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  .batch-signature { margin-top: 40px; padding-top: 24px; border-top: 2px solid #0f172a; }
   @media print {
     body { padding: 12px; }
     .no-print { display: none !important; }
     .ficha { page-break-after: always; margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
     .ficha:last-child { page-break-after: auto; }
+    .batch-signature { page-break-before: always; }
+    .ficha-item { page-break-inside: avoid; }
   }
 `;
 
@@ -57,12 +63,18 @@ function fmtDate(d: Date): string {
   return formatDateTimeBR(d);
 }
 
-export function buildOccurrenceFichaSection(o: FichaOccurrence): string {
+function buildOccurrenceFichaContent(o: FichaOccurrence, heading: "h1" | "h2" = "h1"): string {
   const motivo = OCCURRENCE_REASON_LABELS[o.reason];
+  const title =
+    heading === "h1"
+      ? `<h1>Ficha de ocorrência escolar</h1>`
+      : `<h2>Ocorrência nº ${esc(o.controlNumber)}</h2>`;
+  const subtitle =
+    heading === "h1" ? `<p class="sub">Nº de controle: <strong>${esc(o.controlNumber)}</strong></p>` : "";
 
   return `
-  <h1>Ficha de ocorrência escolar</h1>
-  <p class="sub">Nº de controle: <strong>${esc(o.controlNumber)}</strong></p>
+  ${title}
+  ${subtitle}
 
   <table>
     <tr><th>Aluno</th><td>${esc(o.student.name)} — RA ${esc(o.student.ra)}</td></tr>
@@ -80,8 +92,11 @@ export function buildOccurrenceFichaSection(o: FichaOccurrence): string {
     <tr><th>Telefone</th><td>${esc(o.parentPhone)}</td></tr>
     <tr><th>E-mail</th><td>${esc(o.parentEmail)}</td></tr>
     <tr><th>Ação tomada / encaminhamento</th><td>${escMultiline(o.actionTaken)}</td></tr>
-  </table>
+  </table>`;
+}
 
+function buildOccurrenceFichaSignatures(o: FichaOccurrence): string {
+  return `
   <div class="block">
     <p class="sig-title">Assinaturas (após reunião ou ciência)</p>
     <p class="hint">As assinaturas atestam ciência do conteúdo desta ficha e das medidas comunicadas.</p>
@@ -106,6 +121,25 @@ export function buildOccurrenceFichaSection(o: FichaOccurrence): string {
   </div>`;
 }
 
+function buildBatchCompiledSignature(items: FichaOccurrence[]): string {
+  const numbers = items.map((o) => esc(o.controlNumber)).join(", ");
+  return `
+  <div class="block batch-signature">
+    <p class="sig-title">Assinatura — ciência do compilado de ocorrências</p>
+    <p class="hint">
+      Declaro ter tomado ciência do conteúdo das <strong>${items.length}</strong> ocorrência(s) descritas
+      neste documento (Nº ${numbers}) e das medidas comunicadas pela escola.
+    </p>
+    <div class="line"></div>
+    <div class="hint">Nome completo e assinatura</div>
+    <p class="hint" style="margin-top:16px">Data: _____ / _____ / ________</p>
+  </div>`;
+}
+
+export function buildOccurrenceFichaSection(o: FichaOccurrence): string {
+  return buildOccurrenceFichaContent(o, "h1") + buildOccurrenceFichaSignatures(o);
+}
+
 export function buildOccurrenceFichaHtml(o: FichaOccurrence): string {
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -125,7 +159,7 @@ export function buildOccurrenceFichaHtml(o: FichaOccurrence): string {
 
 export function buildBatchOccurrenceFichaHtml(items: FichaOccurrence[]): string {
   const sections = items
-    .map((o) => `<div class="ficha">${buildOccurrenceFichaSection(o)}</div>`)
+    .map((o) => `<div class="ficha-item">${buildOccurrenceFichaContent(o, "h2")}</div>`)
     .join("\n");
 
   return `<!DOCTYPE html>
@@ -133,13 +167,15 @@ export function buildBatchOccurrenceFichaHtml(items: FichaOccurrence[]): string 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fichas de ocorrência (${items.length})</title>
+  <title>Compilado de ocorrências (${items.length})</title>
   <style>${FICHA_STYLES}</style>
 </head>
 <body>
   <p class="no-print"><button type="button" onclick="window.print()" style="padding:8px 14px;font-size:14px;cursor:pointer;border-radius:8px;border:1px solid #cbd5e1;background:#fff;">Imprimir todas / salvar em PDF</button></p>
-  <p class="no-print sub">${items.length} ficha(s) — documento único para impressão e assinatura.</p>
+  <h1>Compilado de ocorrências escolares</h1>
+  <p class="sub">${items.length} ocorrência(s) neste documento — uma única assinatura ao final.</p>
   ${sections}
+  ${buildBatchCompiledSignature(items)}
   <p class="no-print hint" style="margin-top:32px">Use o botão acima ou Ctrl+P. Em “Destino”, escolha “Salvar como PDF”.</p>
 </body>
 </html>`;
