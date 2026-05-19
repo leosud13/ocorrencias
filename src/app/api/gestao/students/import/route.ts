@@ -29,6 +29,24 @@ function pickColumn(
   return undefined;
 }
 
+function buildRaFromRow(row: Record<string, unknown>): string {
+  const raBase = pickColumn(row, ["RA", "Registro do Aluno", "Registro Acadêmico", "Registro Academico"]) ?? "";
+  const dig = pickColumn(row, [
+    "Dig. RA",
+    "Dig RA",
+    "Digito RA",
+    "Dígito RA",
+    "Digito RA",
+    "Digito do RA",
+    "Digito do RA",
+  ]) ?? "";
+
+  const digitsOnly = (s: string) => s.replace(/\D/g, "");
+  const base = digitsOnly(raBase);
+  const suffix = digitsOnly(dig);
+  return (base + suffix).toUpperCase();
+}
+
 export async function POST(req: Request) {
   const session = await getSession();
   if (!session?.user?.id || session.user.role !== UserRole.GESTAO) {
@@ -37,8 +55,19 @@ export async function POST(req: Request) {
 
   const form = await req.formData();
   const file = form.get("file");
+  const classId = String(form.get("classId") ?? "").trim();
+
+  if (!classId) {
+    return NextResponse.json({ error: "Selecione a turma antes de enviar o arquivo." }, { status: 400 });
+  }
+
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ error: "Envie um arquivo .xlsx ou .csv." }, { status: 400 });
+  }
+
+  const turma = await prisma.schoolClass.findUnique({ where: { id: classId } });
+  if (!turma) {
+    return NextResponse.json({ error: "Turma selecionada não encontrada." }, { status: 400 });
   }
 
   const name = (file.name || "").toLowerCase();
@@ -57,36 +86,29 @@ export async function POST(req: Request) {
     defval: "",
   });
 
-  let createdClasses = 0;
   let createdStudents = 0;
   const errors: string[] = [];
 
   await prisma.$transaction(async (tx) => {
-    const classCache = new Map<string, string>();
-
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const turmaNome = pickColumn(row, ["Turma", "Classe", "Classe/Turma", "Série", "Serie"]);
-      const nomeAluno = pickColumn(row, ["Nome", "Aluno", "Nome do Aluno", "Estudante"]);
-      const ra = pickColumn(row, ["RA", "Registro do Aluno", "Registro Acadêmico"]);
+      const nomeAluno = pickColumn(row, [
+        "Nome",
+        "NOME",
+        "Aluno",
+        "Nome do Aluno",
+        "Nome do aluno",
+        "Estudante",
+        "Nome completo",
+      ]);
+      const ra = buildRaFromRow(row);
 
-      if (!turmaNome && !nomeAluno && !ra) continue;
+      if (!nomeAluno && !ra) continue;
 
       const line = i + 2;
-      if (!turmaNome || !nomeAluno || !ra) {
-        errors.push(`Linha ${line}: informe Turma, Nome e RA.`);
+      if (!nomeAluno || !ra) {
+        errors.push(`Linha ${line}: informe Nome e RA (e Dig. RA, se houver).`);
         continue;
-      }
-
-      let classId = classCache.get(turmaNome);
-      if (!classId) {
-        let turma = await tx.schoolClass.findFirst({ where: { name: turmaNome } });
-        if (!turma) {
-          turma = await tx.schoolClass.create({ data: { name: turmaNome } });
-          createdClasses += 1;
-        }
-        classId = turma.id;
-        classCache.set(turmaNome, classId);
       }
 
       const existing = await tx.student.findUnique({ where: { ra } });
@@ -96,7 +118,7 @@ export async function POST(req: Request) {
       }
 
       await tx.student.create({
-        data: { classId, name: nomeAluno, ra },
+        data: { classId: turma.id, name: nomeAluno.trim(), ra },
       });
       createdStudents += 1;
     }
@@ -104,8 +126,9 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    createdClasses,
+    createdClasses: 0,
     createdStudents,
     errors,
+    turma: turma.name,
   });
 }

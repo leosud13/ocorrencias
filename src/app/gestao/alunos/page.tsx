@@ -15,6 +15,7 @@ export default function AlunosPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [filterClass, setFilterClass] = useState("");
   const [classId, setClassId] = useState("");
+  const [importClassId, setImportClassId] = useState("");
   const [name, setName] = useState("");
   const [ra, setRa] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -77,14 +78,26 @@ export default function AlunosPage() {
     loadClasses();
   }
 
+  function downloadImportTemplate() {
+    const csv = "Nome do aluno,RA,Dig. RA\nJoão da Silva,123456789,0\n";
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "modelo-importacao-alunos.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function importFile(e: React.FormEvent) {
     e.preventDefault();
-    if (!file) return;
+    if (!file || !importClassId) return;
     setMsg(null);
     setError(null);
     setLoading(true);
     const fd = new FormData();
     fd.set("file", file);
+    fd.set("classId", importClassId);
     const res = await fetch("/api/gestao/students/import", { method: "POST", body: fd });
     setLoading(false);
     const j = await res.json().catch(() => ({}));
@@ -92,8 +105,9 @@ export default function AlunosPage() {
       setError(j.error || "Falha na importação.");
       return;
     }
+    const turmaLabel = j.turma ? ` (turma ${j.turma})` : "";
     setMsg(
-      `Importação concluída: ${j.createdStudents} aluno(s), ${j.createdClasses} turma(s) nova(s).` +
+      `Importação concluída${turmaLabel}: ${j.createdStudents} aluno(s) cadastrado(s).` +
         (j.errors?.length ? ` Avisos: ${j.errors.slice(0, 5).join(" ")}` : ""),
     );
     setFile(null);
@@ -113,19 +127,73 @@ export default function AlunosPage() {
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-medium text-slate-900">Importação em lote</h2>
         <p className="mt-1 text-sm text-slate-600">
-          A primeira linha deve conter os cabeçalhos. Colunas aceitas: <strong>Turma</strong> (ou Classe),{" "}
-          <strong>Nome</strong> (ou Aluno), <strong>RA</strong>. Turmas inexistentes serão criadas
-          automaticamente.
+          Selecione a turma antes de enviar o arquivo. A planilha não deve conter coluna de turma — todos os
+          alunos serão vinculados à turma escolhida.
         </p>
-        <form onSubmit={importFile} className="mt-4 flex flex-wrap items-end gap-3">
-          <input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+
+        <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
+          <p className="text-sm font-medium text-slate-800">Modelo ideal da planilha</p>
+          <p className="mt-1 text-xs text-slate-600">
+            Primeira linha com cabeçalhos. O RA final é formado pela concatenação das colunas{" "}
+            <strong>RA</strong> + <strong>Dig. RA</strong> (somente dígitos).
+          </p>
+          <table className="mt-3 w-full max-w-md text-left text-xs">
+            <thead>
+              <tr className="border-b border-slate-200 text-slate-600">
+                <th className="py-1.5 pr-3 font-medium">Nome do aluno</th>
+                <th className="py-1.5 pr-3 font-medium">RA</th>
+                <th className="py-1.5 font-medium">Dig. RA</th>
+              </tr>
+            </thead>
+            <tbody className="font-mono text-slate-800">
+              <tr>
+                <td className="py-1.5 pr-3">João da Silva</td>
+                <td className="py-1.5 pr-3">123456789</td>
+                <td className="py-1.5">0</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="mt-2 text-xs text-slate-500">Exemplo: RA final = 1234567890</p>
           <button
-            type="submit"
-            disabled={loading || !file}
-            className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50"
+            type="button"
+            onClick={downloadImportTemplate}
+            className="mt-3 text-sm font-medium text-brand-600 hover:underline"
           >
-            Enviar planilha
+            Baixar modelo (.csv)
           </button>
+        </div>
+
+        <form onSubmit={importFile} className="mt-4 space-y-4">
+          <div className="max-w-xs">
+            <label className="block text-sm font-medium text-slate-700">Turma</label>
+            <select
+              required
+              value={importClassId}
+              onChange={(e) => setImportClassId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              <option value="">Selecione a turma…</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+            <button
+              type="submit"
+              disabled={loading || !file || !importClassId}
+              className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50"
+            >
+              Enviar planilha
+            </button>
+          </div>
         </form>
       </section>
 
