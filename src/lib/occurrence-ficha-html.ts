@@ -95,7 +95,7 @@ function buildOccurrenceFichaContent(o: FichaOccurrence, heading: "h1" | "h2" = 
   </table>`;
 }
 
-function buildOccurrenceFichaSignatures(o: FichaOccurrence): string {
+function buildOccurrenceFichaSignatures(): string {
   return `
   <div class="block">
     <p class="sig-title">Assinaturas (após reunião ou ciência)</p>
@@ -103,16 +103,11 @@ function buildOccurrenceFichaSignatures(o: FichaOccurrence): string {
   </div>
 
   <div class="block">
-    <div class="sig-title">Gestão escolar</div>
+    <div class="sig-title">Gestor escolar</div>
     <div class="line"></div>
     <div class="hint">Nome completo e carimbo (se houver)</div>
   </div>
 
-  <div class="block">
-    <div class="sig-title">Professor ou agente escolar</div>
-    <div class="line"></div>
-    <div class="hint">Nome completo — mesmo do registro: ${esc(o.author.name)}</div>
-  </div>
 
   <div class="block">
     <div class="sig-title">Responsável pelo aluno</div>
@@ -125,19 +120,30 @@ function buildBatchCompiledSignature(items: FichaOccurrence[]): string {
   const numbers = items.map((o) => esc(o.controlNumber)).join(", ");
   return `
   <div class="block batch-signature">
-    <p class="sig-title">Assinatura — ciência do compilado de ocorrências</p>
+    <p class="sig-title">Assinaturas — ciência do compilado de ocorrências</p>
     <p class="hint">
-      Declaro ter tomado ciência do conteúdo das <strong>${items.length}</strong> ocorrência(s) descritas
-      neste documento (Nº ${numbers}) e das medidas comunicadas pela escola.
+      Ciência do conteúdo das <strong>${items.length}</strong> ocorrência(s) descritas neste documento
+      (Nº ${numbers}) e das medidas comunicadas pela escola.
     </p>
+  </div>
+
+  <div class="block">
+    <div class="sig-title">Gestor escolar</div>
     <div class="line"></div>
-    <div class="hint">Nome completo e assinatura</div>
-    <p class="hint" style="margin-top:16px">Data: _____ / _____ / ________</p>
+    <div class="hint">Nome completo e carimbo (se houver)</div>
+    <p class="hint" style="margin-top:12px">Data: _____ / _____ / ________</p>
+  </div>
+
+  <div class="block">
+    <div class="sig-title">Responsável pelo aluno</div>
+    <div class="line"></div>
+    <div class="hint">Nome completo — documento de identificação conforme política da escola</div>
+    <p class="hint" style="margin-top:12px">Data: _____ / _____ / ________</p>
   </div>`;
 }
 
 export function buildOccurrenceFichaSection(o: FichaOccurrence): string {
-  return buildOccurrenceFichaContent(o, "h1") + buildOccurrenceFichaSignatures(o);
+  return buildOccurrenceFichaContent(o, "h1") + buildOccurrenceFichaSignatures();
 }
 
 export function buildOccurrenceFichaHtml(o: FichaOccurrence): string {
@@ -173,7 +179,7 @@ export function buildBatchOccurrenceFichaHtml(items: FichaOccurrence[]): string 
 <body>
   <p class="no-print"><button type="button" onclick="window.print()" style="padding:8px 14px;font-size:14px;cursor:pointer;border-radius:8px;border:1px solid #cbd5e1;background:#fff;">Imprimir todas / salvar em PDF</button></p>
   <h1>Compilado de ocorrências escolares</h1>
-  <p class="sub">${items.length} ocorrência(s) neste documento — uma única assinatura ao final.</p>
+  <p class="sub">${items.length} ocorrência(s) neste documento — assinaturas do gestor e do responsável ao final.</p>
   ${sections}
   ${buildBatchCompiledSignature(items)}
   <p class="no-print hint" style="margin-top:32px">Use o botão acima ou Ctrl+P. Em “Destino”, escolha “Salvar como PDF”.</p>
