@@ -23,16 +23,33 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
-  const rows = await prisma.occurrence.findMany({
-    where,
-    orderBy: { registeredAt: "desc" },
-    include: {
-      author: { select: { name: true } },
-      schoolClass: { select: { name: true } },
-      student: { select: { name: true, ra: true } },
-      attachments: { select: { id: true } },
-    },
-  });
+  const PAGE_SIZE = 20;
+  const page = Math.max(1, Number.parseInt(new URL(req.url).searchParams.get("page") ?? "1", 10) || 1);
+  const skip = (page - 1) * PAGE_SIZE;
 
-  return NextResponse.json(rows);
+  const [total, rows] = await Promise.all([
+    prisma.occurrence.count({ where }),
+    prisma.occurrence.findMany({
+      where,
+      orderBy: { registeredAt: "desc" },
+      skip,
+      take: PAGE_SIZE,
+      include: {
+        author: { select: { name: true } },
+        schoolClass: { select: { name: true } },
+        student: { select: { name: true, ra: true } },
+        attachments: { select: { id: true } },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  return NextResponse.json({
+    items: rows,
+    page,
+    pageSize: PAGE_SIZE,
+    total,
+    totalPages,
+  });
 }

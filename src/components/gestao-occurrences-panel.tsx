@@ -32,14 +32,20 @@ export function GestaoOccurrencesPanel() {
   const [studentId, setStudentId] = useState("");
   const [studentLabel, setStudentLabel] = useState("");
   const [rows, setRows] = useState<OccurrenceRow[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const PAGE_SIZE = 20;
 
   const load = useCallback(async () => {
     setError(null);
     setLoading(true);
     const params = new URLSearchParams();
+    params.set("page", String(page));
     if (from) params.set("from", from);
     if (to) params.set("to", to);
     if (studentId) params.set("studentId", studentId);
@@ -50,9 +56,15 @@ export function GestaoOccurrencesPanel() {
       setError(data.error || "Erro ao carregar ocorrências.");
       return;
     }
-    setRows(data);
+    setRows(data.items ?? []);
+    setTotal(data.total ?? 0);
+    setTotalPages(data.totalPages ?? 1);
+  }, [from, to, studentId, page]);
+
+  function applyFilters() {
     setSelected(new Set());
-  }, [from, to, studentId]);
+    setPage(1);
+  }
 
   useEffect(() => {
     load();
@@ -115,7 +127,12 @@ export function GestaoOccurrencesPanel() {
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
           onSubmit={(e) => {
             e.preventDefault();
-            load();
+            if (page === 1) {
+              setSelected(new Set());
+              load();
+            } else {
+              applyFilters();
+            }
           }}
         >
           <div>
@@ -248,6 +265,35 @@ export function GestaoOccurrencesPanel() {
             })}
           </tbody>
         </table>
+        {total > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
+            <p className="text-sm text-slate-600">
+              Mostrando {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} de {total}{" "}
+              ocorrência(s)
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={loading || page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Anterior
+              </button>
+              <span className="text-sm text-slate-600">
+                Página {page} de {totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={loading || page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
