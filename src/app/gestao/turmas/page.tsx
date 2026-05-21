@@ -13,6 +13,7 @@ export default function TurmasPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch("/api/gestao/classes");
@@ -70,6 +71,34 @@ export default function TurmasPage() {
     load();
   }
 
+  async function removeAllStudents(id: string, turmaName: string, total: number) {
+    if (
+      !confirm(
+        `Excluir todos os ${total} aluno(s) da turma "${turmaName}"?\n\nAlunos com ocorrências vinculadas não serão removidos.`,
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setMsg(null);
+    const res = await fetch(`/api/gestao/classes/${id}/students`, { method: "DELETE" });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(j.error || "Não foi possível excluir os alunos.");
+      return;
+    }
+    if (j.deleted === 0 && j.skipped > 0) {
+      setError(
+        `Nenhum aluno foi excluído da turma ${j.turma ?? turmaName}. ${j.skipped} aluno(s) têm ocorrências vinculadas.`,
+      );
+      return;
+    }
+    const aviso =
+      j.skipped > 0 ? ` ${j.skipped} aluno(s) com ocorrências foram mantidos.` : "";
+    setMsg(`Turma ${j.turma ?? turmaName}: ${j.deleted} aluno(s) excluído(s).${aviso}`);
+    load();
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -98,6 +127,7 @@ export default function TurmasPage() {
       </form>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {msg && <p className="text-sm text-emerald-700">{msg}</p>}
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <table className="min-w-full text-left text-sm">
@@ -108,18 +138,19 @@ export default function TurmasPage() {
               <th className="px-4 py-3 font-medium">Ocorrências</th>
               <th className="px-4 py-3 font-medium">Renomear</th>
               <th className="px-4 py-3 font-medium" />
+              <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
           <tbody>
             {classes.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                   Nenhuma turma cadastrada.
                 </td>
               </tr>
             )}
             {classes.map((c) => (
-              <Row key={c.id} c={c} onRename={rename} onDelete={remove} />
+              <Row key={c.id} c={c} onRename={rename} onDelete={remove} onClearStudents={removeAllStudents} />
             ))}
           </tbody>
         </table>
@@ -132,10 +163,12 @@ function Row({
   c,
   onRename,
   onDelete,
+  onClearStudents,
 }: {
   c: Classe;
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
+  onClearStudents: (id: string, turmaName: string, total: number) => void;
 }) {
   const [edit, setEdit] = useState(c.name);
 
@@ -164,9 +197,22 @@ function Row({
           </button>
         </div>
       </td>
+      <td className="px-4 py-3">
+        {c._count.students > 0 ? (
+          <button
+            type="button"
+            className="text-xs text-amber-700 hover:underline"
+            onClick={() => onClearStudents(c.id, c.name, c._count.students)}
+          >
+            Excluir todos
+          </button>
+        ) : (
+          <span className="text-xs text-slate-400">—</span>
+        )}
+      </td>
       <td className="px-4 py-3 text-right">
         <button type="button" className="text-xs text-red-600 hover:underline" onClick={() => onDelete(c.id)}>
-          Excluir
+          Excluir turma
         </button>
       </td>
     </tr>

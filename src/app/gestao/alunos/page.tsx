@@ -78,6 +78,42 @@ export default function AlunosPage() {
     loadClasses();
   }
 
+  async function removeAllInClass() {
+    if (!filterClass) return;
+    const turma = classes.find((c) => c.id === filterClass);
+    const turmaName = turma?.name ?? "selecionada";
+    const total = students.length;
+    if (
+      !confirm(
+        `Excluir todos os ${total} aluno(s) da turma "${turmaName}"?\n\nAlunos com ocorrências vinculadas não serão removidos.`,
+      )
+    ) {
+      return;
+    }
+    setMsg(null);
+    setError(null);
+    setLoading(true);
+    const res = await fetch(`/api/gestao/classes/${filterClass}/students`, { method: "DELETE" });
+    setLoading(false);
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(j.error || "Erro ao excluir alunos da turma.");
+      return;
+    }
+    if (j.deleted === 0 && j.skipped > 0) {
+      setError(
+        `Nenhum aluno foi excluído. ${j.skipped} aluno(s) da turma ${j.turma ?? turmaName} têm ocorrências vinculadas.`,
+      );
+      loadStudents();
+      loadClasses();
+      return;
+    }
+    const aviso = j.skipped > 0 ? ` ${j.skipped} aluno(s) com ocorrências foram mantidos.` : "";
+    setMsg(`Turma ${j.turma ?? turmaName}: ${j.deleted} aluno(s) excluído(s).${aviso}`);
+    loadStudents();
+    loadClasses();
+  }
+
   function downloadImportTemplate() {
     const csv = "Nome do aluno;RA;Dig. RA\nJoão da Silva;123456789;0\n";
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -273,6 +309,16 @@ export default function AlunosPage() {
               </option>
             ))}
           </select>
+          {filterClass && students.length > 0 && (
+            <button
+              type="button"
+              disabled={loading}
+              onClick={removeAllInClass}
+              className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+            >
+              Excluir todos da turma
+            </button>
+          )}
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
