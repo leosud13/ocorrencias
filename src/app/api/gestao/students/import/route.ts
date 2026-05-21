@@ -71,8 +71,10 @@ function readWorkbookFromUpload(buf: Buffer, fileName: string) {
   const sample = buf.slice(0, 8000).toString("latin1").replace(/^\uFEFF/, "");
   const firstLine = sample.split(/\r?\n/).find((l) => l.trim()) ?? "";
   const FS = detectCsvDelimiter(firstLine);
-  return XLSX.read(buf, { type: "buffer", FS });
+  return XLSX.read(buf.toString("latin1"), { type: "string", FS });
 }
+
+type ParsedStudentRow = { line: number; name: string; ra: string };
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -132,50 +134,76 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Nenhuma linha de aluno encontrada no arquivo." }, { status: 400 });
   }
 
-  let createdStudents = 0;
   const errors: string[] = [];
+  const pending: ParsedStudentRow[] = [];
+  const raInFile = new Set<string>();
 
-  try {
-    await prisma.$transaction(async (tx) => {
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const nomeAluno = pickColumn(row, [
-          "Nome",
-          "NOME",
-          "Aluno",
-          "Nome do Aluno",
-          "Nome do aluno",
-          "Estudante",
-          "Nome completo",
-        ]);
-        const ra = buildRaFromRow(row);
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const nomeAluno = pickColumn(row, [
+      "Nome",
+      "NOME",
+      "Aluno",
+      "Nome do Aluno",
+      "Nome do aluno",
+      "Estudante",
+      "Nome completo",
+    ]);
+    const ra = buildRaFromRow(row);
 
-        if (!nomeAluno && !ra) continue;
+    if (!nomeAluno && !ra) continue;
 
-        const line = i + 2;
-        if (!nomeAluno || !ra) {
-          errors.push(`Linha ${line}: informe Nome e RA (e Dig. RA, se houver).`);
-          continue;
-        }
+    const line = i + 2;
+    if (!nomeAluno || !ra) {
+      errors.push(`Linha ${line}: informe Nome e RA (e Dig. RA, se houver).`);
+      continue;
+    }
 
-        const existing = await tx.student.findUnique({ where: { ra } });
-        if (existing) {
-          errors.push(`Linha ${line}: RA ${ra} já existe — ignorado.`);
-          continue;
-        }
+    if (raInFile.has(ra)) {
+      errors.push(`Linha ${line}: RA ${ra} repetido no arquivo — ignorado.`);
+      continue;
+    }
+    raInFile.add(ra);
+    pending.push({ line, name: nomeAluno.trim(), ra });
+  }
 
-        await tx.student.create({
-          data: { classId: turma.id, name: nomeAluno.trim(), ra },
-        });
-        createdStudents += 1;
-      }
+  if (pending.length === 0) {
+    return NextResponse.json({
+      ok: true,
+      createdClasses: 0,
+      createdStudents: 0,
+      errors,
+      turma: turma.name,
     });
-  } catch (e) {
-    console.error("student import failed", e);
-    return NextResponse.json(
-      { error: "Erro ao salvar alunos no banco. Tente novamente ou importe em partes menores." },
-      { status: 500 },
-    );
+  }
+
+  const existing = await prisma.student.findMany({
+    where: { ra: { in: [...raInFile] } },
+    select: { ra: true },
+  });
+  const existingRas = new Set(existing.map((s) => s.ra));
+
+  const toCreate: { classId: string; name: string; ra: string }[] = [];
+  for (const row of pending) {
+    if (existingRas.has(row.ra)) {
+      errors.push(`Linha ${row.line}: RA ${row.ra} já existe — ignorado.`);
+      continue;
+    }
+    toCreate.push({ classId: turma.id, name: row.name, ra: row.ra });
+  }
+
+  let createdStudents = 0;
+  if (toCreate.length > 0) {
+    try {
+      const result = await prisma.student.createMany({ data: toCreate });
+      createdStudents = result.count;
+    } catch (e) {
+      console.error("student import failed", e);
+      return NextResponse.json(
+        { error: "Erro ao salvar alunos no banco. Tente novamente ou importe em partes menores." },
+        { status: 500 },
+      );
+    }
   }
 
   return NextResponse.json({
