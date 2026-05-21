@@ -33,18 +33,35 @@ function buildRaFromRow(row: Record<string, unknown>): string {
   const raBase = pickColumn(row, ["RA", "Registro do Aluno", "Registro Acadêmico", "Registro Academico"]) ?? "";
   const dig = pickColumn(row, [
     "Dig. RA",
+    "DIG. RA",
     "Dig RA",
     "Digito RA",
     "Dígito RA",
-    "Digito RA",
-    "Digito do RA",
     "Digito do RA",
   ]) ?? "";
 
-  const digitsOnly = (s: string) => s.replace(/\D/g, "");
-  const base = digitsOnly(raBase);
-  const suffix = digitsOnly(dig);
+  const base = raBase.replace(/\D/g, "");
+  const digTrim = dig.trim().toUpperCase();
+  const suffix = /^[0-9X]$/.test(digTrim) ? digTrim : digTrim.replace(/\D/g, "");
   return (base + suffix).toUpperCase();
+}
+
+function detectCsvDelimiter(firstLine: string): "," | ";" {
+  const semicolons = (firstLine.match(/;/g) ?? []).length;
+  const commas = (firstLine.match(/,/g) ?? []).length;
+  return semicolons > commas ? ";" : ",";
+}
+
+function readWorkbookFromUpload(buf: Buffer, fileName: string) {
+  const lower = fileName.toLowerCase();
+  if (!lower.endsWith(".csv")) {
+    return XLSX.read(buf, { type: "buffer" });
+  }
+
+  const text = buf.toString("utf8").replace(/^\uFEFF/, "");
+  const firstLine = text.split(/\r?\n/).find((l) => l.trim()) ?? "";
+  const FS = detectCsvDelimiter(firstLine);
+  return XLSX.read(text, { type: "string", FS });
 }
 
 export async function POST(req: Request) {
@@ -76,7 +93,7 @@ export async function POST(req: Request) {
   }
 
   const buf = Buffer.from(await file.arrayBuffer());
-  const wb = XLSX.read(buf, { type: "buffer" });
+  const wb = readWorkbookFromUpload(buf, file.name || "import.csv");
   const sheetName = wb.SheetNames[0];
   if (!sheetName) {
     return NextResponse.json({ error: "Planilha vazia." }, { status: 400 });
@@ -85,6 +102,21 @@ export async function POST(req: Request) {
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[sheetName], {
     defval: "",
   });
+
+  if (rows.length > 0) {
+    const keys = Object.keys(rows[0]);
+    const hasNome = keys.some((k) => normalizeKey(k).includes("nome") || normalizeKey(k) === "aluno");
+    const hasRa = keys.some((k) => normalizeKey(k) === "ra");
+    if (!hasNome || !hasRa) {
+      return NextResponse.json(
+        {
+          error:
+            "Cabeçalhos não reconhecidos. Use colunas Nome do aluno, RA e Dig. RA (arquivo .csv com vírgula ou ponto e vírgula).",
+        },
+        { status: 400 },
+      );
+    }
+  }
 
   let createdStudents = 0;
   const errors: string[] = [];
