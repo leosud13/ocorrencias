@@ -79,7 +79,7 @@ export default function AlunosPage() {
   }
 
   function downloadImportTemplate() {
-    const csv = "Nome do aluno,RA,Dig. RA\nJoão da Silva,123456789,0\n";
+    const csv = "Nome do aluno;RA;Dig. RA\nJoão da Silva;123456789;0\n";
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -106,9 +106,18 @@ export default function AlunosPage() {
       return;
     }
     const turmaLabel = j.turma ? ` (turma ${j.turma})` : "";
+    const avisos = j.errors?.length ? j.errors.slice(0, 8).join(" ") : "";
+    if (j.createdStudents === 0 && j.errors?.length) {
+      setError(
+        `Nenhum aluno foi cadastrado${turmaLabel}. ${avisos}` +
+          (j.errors.length > 8 ? ` (+${j.errors.length - 8} avisos)` : ""),
+      );
+      return;
+    }
     setMsg(
       `Importação concluída${turmaLabel}: ${j.createdStudents} aluno(s) cadastrado(s).` +
-        (j.errors?.length ? ` Avisos: ${j.errors.slice(0, 5).join(" ")}` : ""),
+        (avisos ? ` Avisos: ${avisos}` : "") +
+        (j.errors?.length > 8 ? ` (+${j.errors.length - 8} avisos)` : ""),
     );
     setFile(null);
     loadStudents();

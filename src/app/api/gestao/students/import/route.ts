@@ -12,6 +12,14 @@ function normalizeKey(s: string): string {
   return stripAccents(s.trim().toLowerCase());
 }
 
+function cellToString(v: unknown): string {
+  if (v === undefined || v === null) return "";
+  if (typeof v === "number" && Number.isFinite(v)) {
+    return String(Math.trunc(v));
+  }
+  return String(v).trim();
+}
+
 function pickColumn(
   row: Record<string, unknown>,
   candidates: string[],
@@ -23,7 +31,8 @@ function pickColumn(
     if (orig) {
       const v = row[orig];
       if (v === undefined || v === null) return undefined;
-      return String(v).trim();
+      const s = cellToString(v);
+      return s === "" ? undefined : s;
     }
   }
   return undefined;
@@ -58,10 +67,11 @@ function readWorkbookFromUpload(buf: Buffer, fileName: string) {
     return XLSX.read(buf, { type: "buffer" });
   }
 
-  const text = buf.toString("utf8").replace(/^\uFEFF/, "");
-  const firstLine = text.split(/\r?\n/).find((l) => l.trim()) ?? "";
+  // Planilhas exportadas no Excel (BR) costumam ser Latin-1 com separador ;
+  const sample = buf.slice(0, 8000).toString("latin1").replace(/^\uFEFF/, "");
+  const firstLine = sample.split(/\r?\n/).find((l) => l.trim()) ?? "";
   const FS = detectCsvDelimiter(firstLine);
-  return XLSX.read(text, { type: "string", FS });
+  return XLSX.read(buf, { type: "buffer", FS });
 }
 
 export async function POST(req: Request) {
@@ -118,43 +128,55 @@ export async function POST(req: Request) {
     }
   }
 
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "Nenhuma linha de aluno encontrada no arquivo." }, { status: 400 });
+  }
+
   let createdStudents = 0;
   const errors: string[] = [];
 
-  await prisma.$transaction(async (tx) => {
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const nomeAluno = pickColumn(row, [
-        "Nome",
-        "NOME",
-        "Aluno",
-        "Nome do Aluno",
-        "Nome do aluno",
-        "Estudante",
-        "Nome completo",
-      ]);
-      const ra = buildRaFromRow(row);
+  try {
+    await prisma.$transaction(async (tx) => {
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const nomeAluno = pickColumn(row, [
+          "Nome",
+          "NOME",
+          "Aluno",
+          "Nome do Aluno",
+          "Nome do aluno",
+          "Estudante",
+          "Nome completo",
+        ]);
+        const ra = buildRaFromRow(row);
 
-      if (!nomeAluno && !ra) continue;
+        if (!nomeAluno && !ra) continue;
 
-      const line = i + 2;
-      if (!nomeAluno || !ra) {
-        errors.push(`Linha ${line}: informe Nome e RA (e Dig. RA, se houver).`);
-        continue;
+        const line = i + 2;
+        if (!nomeAluno || !ra) {
+          errors.push(`Linha ${line}: informe Nome e RA (e Dig. RA, se houver).`);
+          continue;
+        }
+
+        const existing = await tx.student.findUnique({ where: { ra } });
+        if (existing) {
+          errors.push(`Linha ${line}: RA ${ra} já existe — ignorado.`);
+          continue;
+        }
+
+        await tx.student.create({
+          data: { classId: turma.id, name: nomeAluno.trim(), ra },
+        });
+        createdStudents += 1;
       }
-
-      const existing = await tx.student.findUnique({ where: { ra } });
-      if (existing) {
-        errors.push(`Linha ${line}: RA ${ra} já existe — ignorado.`);
-        continue;
-      }
-
-      await tx.student.create({
-        data: { classId: turma.id, name: nomeAluno.trim(), ra },
-      });
-      createdStudents += 1;
-    }
-  });
+    });
+  } catch (e) {
+    console.error("student import failed", e);
+    return NextResponse.json(
+      { error: "Erro ao salvar alunos no banco. Tente novamente ou importe em partes menores." },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({
     ok: true,
