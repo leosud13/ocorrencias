@@ -49,10 +49,40 @@ function buildRaFromRow(row: Record<string, unknown>): string {
     "Digito do RA",
   ]) ?? "";
 
-  const base = raBase.replace(/\D/g, "");
+  const baseDigits = raBase.replace(/\D/g, "");
+  const base = baseDigits.replace(/^0+/, "") || "0";
   const digTrim = dig.trim().toUpperCase();
   const suffix = /^[0-9X]$/.test(digTrim) ? digTrim : digTrim.replace(/\D/g, "");
   return (base + suffix).toUpperCase();
+}
+
+function decodeCsvBuffer(buf: Buffer): string {
+  if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
+    return buf.toString("utf8").replace(/^\uFEFF/, "");
+  }
+  const utf8 = buf.toString("utf8");
+  if (/Nome do Aluno/i.test(utf8) || /Situação do Aluno/i.test(utf8)) {
+    return utf8.replace(/^\uFEFF/, "");
+  }
+  return buf.toString("latin1").replace(/^\uFEFF/, "");
+}
+
+function rowHasStudentHeaders(keys: string[]): boolean {
+  const hasNome = keys.some((k) => normalizeKey(k).includes("nome") || normalizeKey(k) === "aluno");
+  const hasRa = keys.some((k) => normalizeKey(k) === "ra");
+  return hasNome && hasRa;
+}
+
+function findHeaderLineIndex(lines: string[]): number {
+  for (let i = 0; i < Math.min(lines.length, 25); i++) {
+    const line = lines[i]?.trim();
+    if (!line) continue;
+    const parts = line.split(";").map((p) => normalizeKey(p));
+    const hasNome = parts.some((p) => p.includes("nome") && (p.includes("aluno") || p === "nome do aluno"));
+    const hasRa = parts.some((p) => p === "ra");
+    if (hasNome && hasRa) return i;
+  }
+  return -1;
 }
 
 function detectCsvDelimiter(firstLine: string): "," | ";" {
@@ -67,11 +97,18 @@ function readWorkbookFromUpload(buf: Buffer, fileName: string) {
     return XLSX.read(buf, { type: "buffer" });
   }
 
-  // Planilhas exportadas no Excel (BR) costumam ser Latin-1 com separador ;
-  const sample = buf.slice(0, 8000).toString("latin1").replace(/^\uFEFF/, "");
-  const firstLine = sample.split(/\r?\n/).find((l) => l.trim()) ?? "";
-  const FS = detectCsvDelimiter(firstLine);
-  return XLSX.read(buf.toString("latin1"), { type: "string", FS });
+  const text = decodeCsvBuffer(buf);
+  const lines = text.split(/\r?\n/);
+  const headerIdx = findHeaderLineIndex(lines);
+  const sampleLine =
+    (headerIdx >= 0 ? lines[headerIdx] : lines.find((l) => l.trim()))?.trim() ?? "";
+  const FS = detectCsvDelimiter(sampleLine);
+  const csvBody = headerIdx >= 0 ? lines.slice(headerIdx).join("\n") : text;
+  return XLSX.read(csvBody, { type: "string", FS });
+}
+
+function sheetRowsToStudents(sheet: XLSX.WorkSheet): Record<string, unknown>[] {
+  return XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
 }
 
 type ParsedStudentRow = { line: number; name: string; ra: string };
@@ -111,23 +148,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Planilha vazia." }, { status: 400 });
   }
 
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[sheetName], {
-    defval: "",
-  });
+  let rows = sheetRowsToStudents(wb.Sheets[sheetName]);
 
-  if (rows.length > 0) {
-    const keys = Object.keys(rows[0]);
-    const hasNome = keys.some((k) => normalizeKey(k).includes("nome") || normalizeKey(k) === "aluno");
-    const hasRa = keys.some((k) => normalizeKey(k) === "ra");
-    if (!hasNome || !hasRa) {
-      return NextResponse.json(
-        {
-          error:
-            "Cabeçalhos não reconhecidos. Use colunas Nome do aluno, RA e Dig. RA (arquivo .csv com vírgula ou ponto e vírgula).",
-        },
-        { status: 400 },
-      );
-    }
+  if (rows.length > 0 && !rowHasStudentHeaders(Object.keys(rows[0]))) {
+    return NextResponse.json(
+      {
+        error:
+          "Cabeçalhos não reconhecidos. O arquivo precisa das colunas Nome do aluno, RA e Dig. RA (modelo simples ou lista exportada do sistema escolar).",
+      },
+      { status: 400 },
+    );
   }
 
   if (rows.length === 0) {

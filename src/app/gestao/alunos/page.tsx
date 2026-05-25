@@ -173,7 +173,8 @@ export default function AlunosPage() {
         <h2 className="text-lg font-medium text-slate-900">Importação em lote</h2>
         <p className="mt-1 text-sm text-slate-600">
           Selecione a turma antes de enviar o arquivo. A planilha não deve conter coluna de turma — todos os
-          alunos serão vinculados à turma escolhida.
+          alunos serão vinculados à turma escolhida. Aceita o modelo simples ou exportações do sistema escolar
+          (com título e colunas extras, ex.: Nº de chamada, UF RA, Situação).
         </p>
 
         <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4">
