@@ -148,7 +148,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Planilha vazia." }, { status: 400 });
   }
 
-  let rows = sheetRowsToStudents(wb.Sheets[sheetName]);
+  const rows = sheetRowsToStudents(wb.Sheets[sheetName]);
 
   if (rows.length > 0 && !rowHasStudentHeaders(Object.keys(rows[0]))) {
     return NextResponse.json(
