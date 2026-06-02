@@ -11,6 +11,7 @@ export const OCCURRENCE_REASON_LABELS: Record<OccurrenceReason, string> = {
   SUBSTANCIAS_ILICITAS: "Substâncias ilícitas",
   DESACATO_FUNCIONARIO: "Desacato a funcionário",
   CONVERSAS_PARALELAS: "Conversas paralelas",
+  OUTROS: "Outros",
 };
 
 export const OCCURRENCE_REASON_OPTIONS = (

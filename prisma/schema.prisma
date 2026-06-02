@@ -24,6 +24,7 @@ enum OccurrenceReason {
   SUBSTANCIAS_ILICITAS
   DESACATO_FUNCIONARIO
   CONVERSAS_PARALELAS
+  OUTROS
 }
 
 model User {

@@ -1,0 +1,1 @@
+ALTER TYPE "OccurrenceReason" ADD VALUE IF NOT EXISTS 'OUTROS';
