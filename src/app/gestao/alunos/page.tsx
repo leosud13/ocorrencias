@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { TransferStudentModal } from "@/components/transfer-student-modal";
 
 type Classe = { id: string; name: string };
 type Student = {
@@ -8,6 +9,7 @@ type Student = {
   name: string;
   ra: string;
   class: { id: string; name: string };
+  _count: { occurrences: number };
 };
 
 export default function AlunosPage() {
@@ -22,6 +24,7 @@ export default function AlunosPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [transferStudentId, setTransferStudentId] = useState<string | null>(null);
 
   async function loadClasses() {
     const res = await fetch("/api/gestao/classes");
@@ -166,6 +169,7 @@ export default function AlunosPage() {
         <h1 className="text-2xl font-semibold text-slate-900">Alunos</h1>
         <p className="text-sm text-slate-600">
           Campos obrigatórios: turma, nome e RA. Use a importação em lote com planilhas (.xlsx ou .csv).
+          Alunos podem ser transferidos de turma mantendo o histórico de ocorrências.
         </p>
       </div>
 
@@ -329,6 +333,7 @@ export default function AlunosPage() {
                 <th className="px-4 py-3 font-medium">Nome</th>
                 <th className="px-4 py-3 font-medium">RA</th>
                 <th className="px-4 py-3 font-medium">Turma</th>
+                <th className="px-4 py-3 font-medium">Ocorrências</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
@@ -338,14 +343,28 @@ export default function AlunosPage() {
                   <td className="px-4 py-3">{s.name}</td>
                   <td className="px-4 py-3 font-mono text-xs">{s.ra}</td>
                   <td className="px-4 py-3">{s.class.name}</td>
+                  <td className="px-4 py-3">{s._count?.occurrences ?? 0}</td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      className="text-xs text-red-600 hover:underline"
-                      onClick={() => removeStudent(s.id)}
-                    >
-                      Excluir
-                    </button>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        className="text-xs text-brand-700 hover:underline"
+                        onClick={() => {
+                          setError(null);
+                          setMsg(null);
+                          setTransferStudentId(s.id);
+                        }}
+                      >
+                        Transferir
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs text-red-600 hover:underline"
+                        onClick={() => removeStudent(s.id)}
+                      >
+                        Excluir
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -353,6 +372,18 @@ export default function AlunosPage() {
           </table>
         </div>
       </section>
+
+      <TransferStudentModal
+        studentId={transferStudentId}
+        classes={classes}
+        onClose={() => setTransferStudentId(null)}
+        onTransferred={(message) => {
+          setMsg(message);
+          loadStudents();
+          loadClasses();
+        }}
+        onError={setError}
+      />
     </div>
   );
 }

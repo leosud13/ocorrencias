@@ -15,7 +15,10 @@ export async function GET(req: Request) {
   const students = await prisma.student.findMany({
     where: classId ? { classId } : undefined,
     orderBy: [{ class: { name: "asc" } }, { name: "asc" }],
-    include: { class: { select: { id: true, name: true } } },
+    include: {
+      class: { select: { id: true, name: true } },
+      _count: { select: { occurrences: true } },
+    },
   });
 
   return NextResponse.json(students);
