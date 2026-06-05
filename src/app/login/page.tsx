@@ -71,14 +71,6 @@ export default function LoginPage() {
             {loading ? "Entrando…" : "Entrar"}
           </button>
         </form>
-        <p className="mt-6 text-xs text-slate-500">
-          Perfis de demonstração após o seed:{" "}
-          <span className="font-mono">gestao@escola.local</span> /{" "}
-          <span className="font-mono">Gestao123!</span>
-          <br />
-          <span className="font-mono">professor@escola.local</span> /{" "}
-          <span className="font-mono">Professor123!</span>
-        </p>
       </div>
     </div>
   );
