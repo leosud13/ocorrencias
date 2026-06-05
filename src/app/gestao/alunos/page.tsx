@@ -12,10 +12,16 @@ type Student = {
   _count: { occurrences: number };
 };
 
+const PAGE_SIZE = 20;
+
 export default function AlunosPage() {
   const [classes, setClasses] = useState<Classe[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [filterClass, setFilterClass] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [listLoading, setListLoading] = useState(false);
   const [classId, setClassId] = useState("");
   const [importClassId, setImportClassId] = useState("");
   const [name, setName] = useState("");
@@ -32,10 +38,18 @@ export default function AlunosPage() {
   }
 
   const loadStudents = useCallback(async () => {
-    const q = filterClass ? `?classId=${encodeURIComponent(filterClass)}` : "";
-    const res = await fetch(`/api/gestao/students${q}`);
-    if (res.ok) setStudents(await res.json());
-  }, [filterClass]);
+    setListLoading(true);
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    if (searchQuery.trim()) params.set("q", searchQuery.trim());
+    const res = await fetch(`/api/gestao/students?${params}`);
+    setListLoading(false);
+    if (!res.ok) return;
+    const data = await res.json();
+    setStudents(data.items ?? []);
+    setTotal(data.total ?? 0);
+    setTotalPages(data.totalPages ?? 1);
+  }, [page, searchQuery]);
 
   useEffect(() => {
     loadClasses();
@@ -77,42 +91,6 @@ export default function AlunosPage() {
       setError(j.error || "Erro ao excluir.");
       return;
     }
-    loadStudents();
-    loadClasses();
-  }
-
-  async function removeAllInClass() {
-    if (!filterClass) return;
-    const turma = classes.find((c) => c.id === filterClass);
-    const turmaName = turma?.name ?? "selecionada";
-    const total = students.length;
-    if (
-      !confirm(
-        `Excluir todos os ${total} aluno(s) da turma "${turmaName}"?\n\nAlunos com ocorrências vinculadas não serão removidos.`,
-      )
-    ) {
-      return;
-    }
-    setMsg(null);
-    setError(null);
-    setLoading(true);
-    const res = await fetch(`/api/gestao/classes/${filterClass}/students`, { method: "DELETE" });
-    setLoading(false);
-    const j = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setError(j.error || "Erro ao excluir alunos da turma.");
-      return;
-    }
-    if (j.deleted === 0 && j.skipped > 0) {
-      setError(
-        `Nenhum aluno foi excluído. ${j.skipped} aluno(s) da turma ${j.turma ?? turmaName} têm ocorrências vinculadas.`,
-      );
-      loadStudents();
-      loadClasses();
-      return;
-    }
-    const aviso = j.skipped > 0 ? ` ${j.skipped} aluno(s) com ocorrências foram mantidos.` : "";
-    setMsg(`Turma ${j.turma ?? turmaName}: ${j.deleted} aluno(s) excluído(s).${aviso}`);
     loadStudents();
     loadClasses();
   }
@@ -300,30 +278,21 @@ export default function AlunosPage() {
       {msg && <p className="text-sm text-emerald-700">{msg}</p>}
 
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           <h2 className="text-lg font-medium text-slate-900">Lista</h2>
-          <select
-            value={filterClass}
-            onChange={(e) => setFilterClass(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
-          >
-            <option value="">Todas as turmas</option>
-            {classes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          {filterClass && students.length > 0 && (
-            <button
-              type="button"
-              disabled={loading}
-              onClick={removeAllInClass}
-              className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-50"
-            >
-              Excluir todos da turma
-            </button>
-          )}
+          <div className="min-w-[220px] flex-1 max-w-md">
+            <label className="block text-sm font-medium text-slate-700">Pesquisar</label>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Nome, RA ou turma…"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+            />
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -338,6 +307,17 @@ export default function AlunosPage() {
               </tr>
             </thead>
             <tbody>
+              {students.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                    {listLoading
+                      ? "Carregando…"
+                      : searchQuery.trim()
+                        ? "Nenhum aluno encontrado para a pesquisa."
+                        : "Nenhum aluno cadastrado."}
+                  </td>
+                </tr>
+              )}
               {students.map((s) => (
                 <tr key={s.id} className="border-t border-slate-100">
                   <td className="px-4 py-3">{s.name}</td>
@@ -370,6 +350,34 @@ export default function AlunosPage() {
               ))}
             </tbody>
           </table>
+          {total > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
+              <p className="text-sm text-slate-600">
+                Mostrando {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} de {total} aluno(s)
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={listLoading || page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <span className="text-sm text-slate-600">
+                  Página {page} de {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={listLoading || page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Próxima
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
