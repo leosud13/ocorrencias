@@ -43,7 +43,7 @@ O repositório já inclui **`vercel.json`** com `buildCommand`: `npm run vercel-
 2. Em [vercel.com](https://vercel.com) → **Add New → Project** → importe o repositório do GitHub.
 3. Em **Settings → Environment Variables**, adicione para **Production** (e Preview, se quiser):
    - `DATABASE_URL` — URL do Postgres
-   - `NEXTAUTH_URL` — URL final do site (ex.: `https://seu-projeto.vercel.app`; após o primeiro deploy, ajuste se o domínio mudar)
+   - `NEXTAUTH_URL` — URL final do site (`https://wanda-ocorrencias.vercel.app`)
    - `NEXTAUTH_SECRET` — segredo longo (ex.: `openssl rand -base64 32`)
 4. Faça o **primeiro deploy**. O build aplica as migrações em `prisma/migrations/`.
 5. **Dados iniciais (seed)** não rodam no deploy. No seu PC, com `DATABASE_URL` apontando para o **mesmo** banco de produção (cuidado), rode **uma vez**: `npx prisma db seed` — ou crie usuários pela sua rotina interna. **Não** deixe o seed em pipeline de deploy; troque as senhas padrão em produção.
@@ -95,5 +95,6 @@ Troque senhas dos usuários seed em produção e não publique `.env` no reposit
 
 ## Produção
 
+- **URL:** [https://wanda-ocorrencias.vercel.app](https://wanda-ocorrencias.vercel.app)
 - Troque senhas, use banco PostgreSQL (`DATABASE_URL`), defina `NEXTAUTH_URL` e um `NEXTAUTH_SECRET` forte.
 - Armazene anexos em **object storage** (S3, Supabase Storage, Cloudinary, etc.): o modo atual grava em `uploads/` no disco do servidor.
