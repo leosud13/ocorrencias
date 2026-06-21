@@ -8,6 +8,10 @@ import {
   canViewOccurrence,
 } from "@/lib/occurrence-access";
 import { dateTimeInputBRToISOString } from "@/lib/date-time";
+import {
+  hasActionTaken,
+  notifyOccurrenceActionTaken,
+} from "@/lib/occurrence-notifications";
 
 type Params = { params: { id: string } };
 
@@ -52,7 +56,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   const existing = await prisma.occurrence.findUnique({
     where: { id: params.id },
-    select: { id: true, authorId: true },
+    select: { id: true, authorId: true, controlNumber: true, actionTaken: true },
   });
 
   if (!existing) {
@@ -114,11 +118,27 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Nenhum campo para atualizar." }, { status: 400 });
   }
 
+  const nextActionTaken =
+    body.actionTaken !== undefined ? body.actionTaken?.trim() || null : null;
+  const shouldNotifyActionTaken =
+    body.actionTaken !== undefined &&
+    hasActionTaken(nextActionTaken) &&
+    nextActionTaken !== (existing.actionTaken?.trim() || "");
+
   const updated = await prisma.occurrence.update({
     where: { id: params.id },
     data,
     include: occurrenceInclude,
   });
+
+  if (shouldNotifyActionTaken) {
+    await notifyOccurrenceActionTaken({
+      authorId: existing.authorId,
+      actorId: session.user.id,
+      occurrenceId: existing.id,
+      controlNumber: existing.controlNumber,
+    });
+  }
 
   return NextResponse.json(updated);
 }

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { UserRole } from "@prisma/client";
 import { SignOutButton } from "@/components/sign-out-button";
+import { NotificationsBell } from "@/components/notifications-bell";
 import { USER_ROLE_LABELS } from "@/lib/user-roles";
 
 export default async function ProfessorLayout({
@@ -32,6 +33,7 @@ export default async function ProfessorLayout({
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm text-slate-600">
+            <NotificationsBell />
             {session.user.image && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={session.user.image} alt="" className="h-8 w-8 rounded-full object-cover" />

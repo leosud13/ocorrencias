@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum NotificationType {
+  OCCURRENCE_ACTION_TAKEN
+}
+
 enum UserRole {
   PROFESSOR
   GESTAO
@@ -38,6 +42,7 @@ model User {
   blockedAt    DateTime?
   occurrences  Occurrence[]  @relation("AuthorOccurrences")
   comments     OccurrenceComment[] @relation("OccurrenceCommentAuthor")
+  notifications Notification[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -83,6 +88,7 @@ model Occurrence {
   actionTaken     String?
   attachments     OccurrenceAttachment[]
   comments        OccurrenceComment[]
+  notifications   Notification[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
@@ -114,5 +120,21 @@ model OccurrenceAttachment {
   sizeBytes     Int
   createdAt     DateTime    @default(now())
 
+  @@index([occurrenceId])
+}
+
+model Notification {
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurrenceId  String
+  occurrence    Occurrence       @relation(fields: [occurrenceId], references: [id], onDelete: Cascade)
+  type          NotificationType
+  title         String
+  message       String
+  readAt        DateTime?
+  createdAt     DateTime         @default(now())
+
+  @@index([userId, readAt])
   @@index([occurrenceId])
 }
