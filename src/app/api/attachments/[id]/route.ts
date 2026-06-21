@@ -1,9 +1,9 @@
 import { readFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
-import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { canViewOccurrence } from "@/lib/occurrence-access";
 
 type Params = { params: { id: string } };
 
@@ -22,9 +22,7 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
   }
 
-  const isGestao = session.user.role === UserRole.GESTAO;
-  const isAuthor = att.occurrence.authorId === session.user.id;
-  if (!isGestao && !isAuthor) {
+  if (!canViewOccurrence(session.user, att.occurrence)) {
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
 

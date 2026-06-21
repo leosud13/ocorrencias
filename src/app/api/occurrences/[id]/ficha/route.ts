@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { buildOccurrenceFichaHtml } from "@/lib/occurrence-ficha-html";
+import { canViewOccurrence } from "@/lib/occurrence-access";
 
 type Params = { params: { id: string } };
 
@@ -25,9 +25,7 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "Não encontrada" }, { status: 404 });
   }
 
-  const isGestao = session.user.role === UserRole.GESTAO;
-  const isAuthor = o.authorId === session.user.id;
-  if (!isGestao && !isAuthor) {
+  if (!canViewOccurrence(session.user, o)) {
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
 

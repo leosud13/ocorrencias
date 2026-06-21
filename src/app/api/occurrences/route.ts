@@ -1,22 +1,16 @@
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
-import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { OccurrenceReason, Prisma, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { generateControlNumber } from "@/lib/control-number";
 import { canRegisterOccurrences } from "@/lib/user-roles";
+import { saveOccurrenceAttachments } from "@/lib/occurrence-attachments";
 import {
   buildOccurrenceListWhere,
   parseOccurrenceListFilters,
 } from "@/lib/occurrence-list-filters";
 
 const REASONS = new Set<string>(Object.values(OccurrenceReason));
-
-function sanitizeFileName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
-}
 
 const PAGE_SIZE = 20;
 
@@ -123,26 +117,7 @@ export async function POST(req: Request) {
     });
 
     if (files.length > 0) {
-      const baseDir = path.join(process.cwd(), "uploads", occ.id);
-      await mkdir(baseDir, { recursive: true });
-
-      for (const file of files) {
-        const buf = Buffer.from(await file.arrayBuffer());
-        const safe = sanitizeFileName(file.name || "arquivo");
-        const storedName = `${randomUUID()}-${safe}`;
-        const storedPath = path.join("uploads", occ.id, storedName);
-        await writeFile(path.join(process.cwd(), storedPath), buf);
-
-        await tx.occurrenceAttachment.create({
-          data: {
-            occurrenceId: occ.id,
-            fileName: file.name || "arquivo",
-            storedPath,
-            mimeType: file.type || "application/octet-stream",
-            sizeBytes: buf.length,
-          },
-        });
-      }
+      await saveOccurrenceAttachments(occ.id, files, tx);
     }
 
     return occ;

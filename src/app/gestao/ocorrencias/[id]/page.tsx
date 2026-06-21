@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db";
 import { formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 import { ManageOccurrencePanel } from "@/components/manage-occurrence-panel";
+import { OccurrenceActivityPanel } from "@/components/occurrence-activity-panel";
+import { canContributeToOccurrence, canViewOccurrence } from "@/lib/occurrence-access";
 
 type Props = { params: { id: string } };
 
@@ -19,11 +21,16 @@ export default async function GestaoOccurrenceDetailPage({ params }: Props) {
       author: true,
       schoolClass: true,
       student: true,
-      attachments: true,
+      attachments: { orderBy: { createdAt: "asc" } },
+      comments: {
+        orderBy: { createdAt: "asc" },
+        include: { author: { select: { name: true, role: true } } },
+      },
     },
   });
 
   if (!o) notFound();
+  if (!canViewOccurrence(session.user, o)) redirect("/login");
 
   return (
     <div className="space-y-8">
@@ -80,27 +87,22 @@ export default async function GestaoOccurrenceDetailPage({ params }: Props) {
         </div>
       </dl>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium text-slate-900">Evidências</h2>
-        {o.attachments.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">Nenhum arquivo anexado.</p>
-        ) : (
-          <ul className="mt-3 space-y-2 text-sm">
-            {o.attachments.map((a) => (
-              <li key={a.id}>
-                <a
-                  className="text-brand-700 hover:underline"
-                  href={`/api/attachments/${a.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {a.fileName}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <OccurrenceActivityPanel
+        occurrenceId={o.id}
+        initialComments={o.comments.map((comment) => ({
+          id: comment.id,
+          content: comment.content,
+          createdAt: comment.createdAt.toISOString(),
+          author: comment.author,
+        }))}
+        initialAttachments={o.attachments.map((attachment) => ({
+          id: attachment.id,
+          fileName: attachment.fileName,
+          sizeBytes: attachment.sizeBytes,
+          createdAt: attachment.createdAt.toISOString(),
+        }))}
+        canContribute={canContributeToOccurrence(session.user, o)}
+      />
 
       <ManageOccurrencePanel
         occurrenceId={o.id}

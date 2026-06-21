@@ -37,6 +37,7 @@ model User {
   isBlocked    Boolean       @default(false)
   blockedAt    DateTime?
   occurrences  Occurrence[]  @relation("AuthorOccurrences")
+  comments     OccurrenceComment[] @relation("OccurrenceCommentAuthor")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -81,12 +82,26 @@ model Occurrence {
   parentEmail     String?
   actionTaken     String?
   attachments     OccurrenceAttachment[]
+  comments        OccurrenceComment[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
   @@index([authorId])
   @@index([classId])
   @@index([registeredAt])
+}
+
+model OccurrenceComment {
+  id            String      @id @default(cuid())
+  occurrenceId  String
+  occurrence    Occurrence  @relation(fields: [occurrenceId], references: [id], onDelete: Cascade)
+  authorId      String
+  author        User        @relation("OccurrenceCommentAuthor", fields: [authorId], references: [id])
+  content       String
+  createdAt     DateTime    @default(now())
+
+  @@index([occurrenceId])
+  @@index([authorId])
 }
 
 model OccurrenceAttachment {
