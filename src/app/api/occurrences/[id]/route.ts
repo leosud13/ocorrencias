@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import {
+  canContributeToOccurrence,
   canManageOccurrenceTratativa,
   canViewOccurrence,
 } from "@/lib/occurrence-access";
+import { dateTimeInputBRToISOString } from "@/lib/date-time";
 
 type Params = { params: { id: string } };
 
@@ -43,8 +46,17 @@ export async function GET(_req: Request, { params }: Params) {
 
 export async function PATCH(req: Request, { params }: Params) {
   const session = await getSession();
-  if (!session?.user?.id || !canManageOccurrenceTratativa(session.user)) {
-    return NextResponse.json({ error: "Somente a gestão pode atualizar esta ocorrência." }, { status: 403 });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const existing = await prisma.occurrence.findUnique({
+    where: { id: params.id },
+    select: { id: true, authorId: true },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Não encontrada" }, { status: 404 });
   }
 
   const body = (await req.json()) as {
@@ -52,14 +64,55 @@ export async function PATCH(req: Request, { params }: Params) {
     parentPhone?: string | null;
     parentEmail?: string | null;
     actionTaken?: string | null;
+    registeredAt?: string | null;
   };
 
-  const data = {
-    parentName: body.parentName?.trim() || null,
-    parentPhone: body.parentPhone?.trim() || null,
-    parentEmail: body.parentEmail?.trim() || null,
-    actionTaken: body.actionTaken?.trim() || null,
-  };
+  const data: Prisma.OccurrenceUpdateInput = {};
+  const hasTratativa =
+    body.parentName !== undefined ||
+    body.parentPhone !== undefined ||
+    body.parentEmail !== undefined ||
+    body.actionTaken !== undefined;
+  const hasRegisteredAt = body.registeredAt !== undefined;
+
+  if (hasRegisteredAt) {
+    if (!canContributeToOccurrence(session.user, existing)) {
+      return NextResponse.json(
+        { error: "Sem permissão para alterar a data de registro." },
+        { status: 403 },
+      );
+    }
+
+    const value = body.registeredAt?.trim();
+    if (!value) {
+      return NextResponse.json({ error: "Informe a data de registro." }, { status: 400 });
+    }
+
+    const registeredAt = new Date(dateTimeInputBRToISOString(value));
+    if (Number.isNaN(registeredAt.getTime())) {
+      return NextResponse.json({ error: "Data de registro inválida." }, { status: 400 });
+    }
+
+    data.registeredAt = registeredAt;
+  }
+
+  if (hasTratativa) {
+    if (!canManageOccurrenceTratativa(session.user)) {
+      return NextResponse.json(
+        { error: "Somente a gestão pode atualizar a tratativa." },
+        { status: 403 },
+      );
+    }
+
+    data.parentName = body.parentName?.trim() || null;
+    data.parentPhone = body.parentPhone?.trim() || null;
+    data.parentEmail = body.parentEmail?.trim() || null;
+    data.actionTaken = body.actionTaken?.trim() || null;
+  }
+
+  if (!hasRegisteredAt && !hasTratativa) {
+    return NextResponse.json({ error: "Nenhum campo para atualizar." }, { status: 400 });
+  }
 
   const updated = await prisma.occurrence.update({
     where: { id: params.id },

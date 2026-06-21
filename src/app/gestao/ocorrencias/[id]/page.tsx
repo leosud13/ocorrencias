@@ -7,6 +7,7 @@ import { formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 import { ManageOccurrencePanel } from "@/components/manage-occurrence-panel";
 import { OccurrenceActivityPanel } from "@/components/occurrence-activity-panel";
+import { EditRegisteredAtPanel } from "@/components/edit-registered-at-panel";
 import { canContributeToOccurrence, canViewOccurrence } from "@/lib/occurrence-access";
 
 type Props = { params: { id: string } };
@@ -61,7 +62,13 @@ export default async function GestaoOccurrenceDetailPage({ params }: Props) {
         </div>
         <div>
           <dt className="text-xs font-medium uppercase text-slate-500">Data de registro</dt>
-          <dd className="text-sm text-slate-900">{formatDateTimeBR(o.registeredAt)}</dd>
+          <dd className="text-sm text-slate-900">
+            <EditRegisteredAtPanel
+              occurrenceId={o.id}
+              initialRegisteredAt={o.registeredAt.toISOString()}
+              canEdit={canContributeToOccurrence(session.user, o)}
+            />
+          </dd>
         </div>
         <div>
           <dt className="text-xs font-medium uppercase text-slate-500">Data da ocorrência</dt>
