@@ -1,35 +1,63 @@
 import { Prisma } from "@prisma/client";
 import { dateRangeToBrasiliaUtc } from "@/lib/date-time";
 
+export type OccurrenceStatusFilter = "pendente" | "com_acao";
+
 export type OccurrenceListFilters = {
   from?: string | null;
   to?: string | null;
-  studentId?: string | null;
+  q?: string | null;
+  classId?: string | null;
+  status?: OccurrenceStatusFilter | null;
 };
 
 export function parseOccurrenceListFilters(
   searchParams: URLSearchParams,
 ): OccurrenceListFilters {
+  const statusRaw = searchParams.get("status")?.trim();
+  const status =
+    statusRaw === "pendente" || statusRaw === "com_acao" ? statusRaw : null;
+
   return {
     from: searchParams.get("from")?.trim() || null,
     to: searchParams.get("to")?.trim() || null,
-    studentId: searchParams.get("studentId")?.trim() || null,
+    q: searchParams.get("q")?.trim() || null,
+    classId: searchParams.get("classId")?.trim() || null,
+    status,
   };
 }
 
 export function buildOccurrenceListWhere(
   filters: OccurrenceListFilters,
 ): Prisma.OccurrenceWhereInput {
-  const where: Prisma.OccurrenceWhereInput = {};
-  const { from, to, studentId } = filters;
+  const and: Prisma.OccurrenceWhereInput[] = [];
+  const { from, to, q, classId, status } = filters;
 
   if (from && to) {
-    where.occurredAt = dateRangeToBrasiliaUtc(from, to);
+    and.push({ occurredAt: dateRangeToBrasiliaUtc(from, to) });
   } else if (from || to) {
     throw new Error("Informe data inicial e final para filtrar por período.");
   }
 
-  if (studentId) where.studentId = studentId;
+  if (classId) and.push({ classId });
 
-  return where;
+  if (q) {
+    and.push({
+      OR: [
+        { student: { name: { contains: q, mode: "insensitive" } } },
+        { student: { ra: { contains: q, mode: "insensitive" } } },
+        { schoolClass: { name: { contains: q, mode: "insensitive" } } },
+      ],
+    });
+  }
+
+  if (status === "pendente") {
+    and.push({ OR: [{ actionTaken: null }, { actionTaken: "" }] });
+  } else if (status === "com_acao") {
+    and.push({
+      AND: [{ actionTaken: { not: null } }, { NOT: { actionTaken: "" } }],
+    });
+  }
+
+  return and.length ? { AND: and } : {};
 }
