@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { dateTimeInputBRToISOString, formatDateTimeInputBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_OPTIONS } from "@/lib/occurrence-reasons";
+import {
+  QuickOccurrencesModal,
+  applyQuickOccurrenceTemplate,
+} from "@/components/quick-occurrences-modal";
 
 type Classe = { id: string; name: string };
 type Aluno = { id: string; name: string; ra: string };
@@ -30,6 +34,7 @@ export function OccurrenceForm({
   const [files, setFiles] = useState<FileList | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/classes")
@@ -149,15 +154,36 @@ export function OccurrenceForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700">Mais informações / detalhes</label>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="block text-sm font-medium text-slate-700">
+              Mais informações / detalhes
+            </label>
+            <button
+              type="button"
+              onClick={() => setQuickOpen(true)}
+              className="rounded-lg border border-brand-600 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+            >
+              Ocorrências rápidas
+            </button>
+          </div>
           <textarea
-            rows={4}
+            rows={6}
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Descreva o contexto com objetividade."
+            placeholder="Descreva o contexto com objetividade ou use ocorrências rápidas para inserir um relato padronizado."
           />
         </div>
+
+        <QuickOccurrencesModal
+          open={quickOpen}
+          onClose={() => setQuickOpen(false)}
+          onSelect={(template) => {
+            const next = applyQuickOccurrenceTemplate(template, details, reason);
+            setDetails(next.details);
+            if (next.reason) setReason(next.reason);
+          }}
+        />
 
         <div>
           <label className="block text-sm font-medium text-slate-700">Evidências (arquivos)</label>
