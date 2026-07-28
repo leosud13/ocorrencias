@@ -37,8 +37,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Prisma migrate (CI database)
-        run: npx prisma migrate deploy
+      - name: Prisma schema (CI database)
+        run: npx prisma db push
 
       - name: Lint
         run: npm run lint
