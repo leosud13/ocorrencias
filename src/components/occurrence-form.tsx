@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { dateTimeInputBRToISOString, formatDateTimeInputBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_OPTIONS } from "@/lib/occurrence-reasons";
+import { OCCURRENCE_LOCATION_OPTIONS } from "@/lib/occurrence-locations";
 import {
   QuickOccurrencesModal,
   applyQuickOccurrenceTemplate,
@@ -29,6 +30,7 @@ export function OccurrenceForm({
   const [classId, setClassId] = useState("");
   const [studentId, setStudentId] = useState("");
   const [reason, setReason] = useState("");
+  const [location, setLocation] = useState("");
   const [details, setDetails] = useState("");
   const [occurredAt, setOccurredAt] = useState(() => formatDateTimeInputBR());
   const [files, setFiles] = useState<FileList | null>(null);
@@ -63,6 +65,7 @@ export function OccurrenceForm({
     fd.set("classId", classId);
     fd.set("studentId", studentId);
     fd.set("reason", reason);
+    fd.set("location", location);
     fd.set("occurredAt", dateTimeInputBRToISOString(occurredAt));
     if (details.trim()) fd.set("details", details.trim());
     if (files) {
@@ -134,6 +137,23 @@ export function OccurrenceForm({
             onChange={(e) => setOccurredAt(e.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700">Local da ocorrência</label>
+          <select
+            required
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="">Selecione…</option>
+            {OCCURRENCE_LOCATION_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

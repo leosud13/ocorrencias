@@ -1,11 +1,13 @@
-import type { OccurrenceReason } from "@prisma/client";
+import type { OccurrenceLocation, OccurrenceReason } from "@prisma/client";
 import { formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
+import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
 
 export type FichaOccurrence = {
   controlNumber: string;
   registeredAt: Date;
   occurredAt: Date;
+  location: OccurrenceLocation;
   reason: OccurrenceReason;
   details: string | null;
   parentName: string | null;
@@ -86,6 +88,7 @@ function buildOccurrenceFichaContent(
 ): string {
   const includeTratativa = options.includeTratativa ?? true;
   const motivo = OCCURRENCE_REASON_LABELS[o.reason];
+  const local = OCCURRENCE_LOCATION_LABELS[o.location];
   const title =
     heading === "h1"
       ? `<h1>Ficha de ocorrência escolar</h1>`
@@ -103,6 +106,7 @@ function buildOccurrenceFichaContent(
     <tr><th>Professor / agente (autor do registro)</th><td>${esc(o.author.name)}${o.author.email ? ` (${esc(o.author.email)})` : ""}</td></tr>
     <tr><th>Data de registro no sistema</th><td>${esc(fmtDate(o.registeredAt))}</td></tr>
     <tr><th>Data e horário da ocorrência</th><td>${esc(fmtDate(o.occurredAt))}</td></tr>
+    <tr><th>Local</th><td>${esc(local)}</td></tr>
     <tr><th>Motivo</th><td>${esc(motivo)}</td></tr>
     <tr><th>Detalhes</th><td>${escMultiline(o.details)}</td></tr>
   </table>

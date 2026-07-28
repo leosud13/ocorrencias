@@ -20,9 +20,18 @@ export const authOptions: NextAuthOptions = {
         const password = credentials?.password;
         if (!email || !password) return null;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        let user;
+        try {
+          user = await prisma.user.findUnique({ where: { email } });
+        } catch (err) {
+          console.error("[auth] database error during login:", err);
+          throw new Error("Falha ao conectar ao banco de dados. Verifique a DATABASE_URL.");
+        }
+
         if (!user) return null;
-        if (user.isBlocked) return null;
+        if (user.isBlocked) {
+          throw new Error("Usuário bloqueado. Contate a gestão.");
+        }
 
         const ok = await bcrypt.compare(password, user.passwordHash);
         if (!ok) return null;

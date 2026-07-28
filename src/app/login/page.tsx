@@ -25,7 +25,14 @@ export default function LoginPage() {
     });
     setLoading(false);
     if (res?.error) {
-      setError("E-mail ou senha inválidos.");
+      const detail = decodeURIComponent(String(res.error));
+      if (detail.includes("banco de dados") || detail.includes("DATABASE_URL")) {
+        setError("Falha ao conectar ao banco de dados. Contate o administrador.");
+      } else if (detail.includes("bloqueado")) {
+        setError("Usuário bloqueado. Contate a gestão.");
+      } else {
+        setError("E-mail ou senha inválidos.");
+      }
       return;
     }
     router.push(callbackUrl);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { OccurrenceReason, Prisma, UserRole } from "@prisma/client";
+import { OccurrenceLocation, OccurrenceReason, Prisma, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { generateControlNumber } from "@/lib/control-number";
@@ -11,6 +11,7 @@ import {
 } from "@/lib/occurrence-list-filters";
 
 const REASONS = new Set<string>(Object.values(OccurrenceReason));
+const LOCATIONS = new Set<string>(Object.values(OccurrenceLocation));
 
 const PAGE_SIZE = 20;
 
@@ -76,15 +77,23 @@ export async function POST(req: Request) {
   const classId = String(form.get("classId") ?? "");
   const studentId = String(form.get("studentId") ?? "");
   const reason = String(form.get("reason") ?? "");
+  const location = String(form.get("location") ?? "");
   const details = form.get("details") ? String(form.get("details")) : null;
   const occurredAtRaw = String(form.get("occurredAt") ?? "");
 
-  if (!classId || !studentId || !reason || !occurredAtRaw) {
-    return NextResponse.json({ error: "Preencha turma, aluno, motivo e data da ocorrência." }, { status: 400 });
+  if (!classId || !studentId || !reason || !location || !occurredAtRaw) {
+    return NextResponse.json(
+      { error: "Preencha turma, aluno, local, motivo e data da ocorrência." },
+      { status: 400 },
+    );
   }
 
   if (!REASONS.has(reason)) {
     return NextResponse.json({ error: "Motivo inválido." }, { status: 400 });
+  }
+
+  if (!LOCATIONS.has(location)) {
+    return NextResponse.json({ error: "Local inválido." }, { status: 400 });
   }
 
   const occurredAt = new Date(occurredAtRaw);
@@ -111,6 +120,7 @@ export async function POST(req: Request) {
         classId,
         studentId,
         occurredAt,
+        location: location as OccurrenceLocation,
         reason: reason as OccurrenceReason,
         details: details?.trim() || null,
       },

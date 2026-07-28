@@ -31,6 +31,14 @@ enum OccurrenceReason {
   OUTROS
 }
 
+enum OccurrenceLocation {
+  SALA_DE_AULA
+  PATIO
+  QUADRA
+  BANHEIRO
+  CORREDORES
+}
+
 model User {
   id           String        @id @default(cuid())
   email        String        @unique
@@ -80,6 +88,7 @@ model Occurrence {
   student         Student            @relation(fields: [studentId], references: [id])
   registeredAt    DateTime           @default(now())
   occurredAt      DateTime
+  location        OccurrenceLocation
   reason          OccurrenceReason
   details         String?
   parentName      String?

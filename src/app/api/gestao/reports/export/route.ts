@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
-import { OccurrenceReason, UserRole } from "@prisma/client";
+import { OccurrenceLocation, OccurrenceReason, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatDateTimeBR } from "@/lib/date-time";
 import { getSession } from "@/lib/session";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
+import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
 import { buildOccurrenceWhere, parseReportQuery } from "@/lib/report-filters";
 
 function excelSheetName(name: string, used: Set<string>): string {
@@ -23,6 +24,7 @@ function rowFromOccurrence(o: {
   controlNumber: string;
   registeredAt: Date;
   occurredAt: Date;
+  location: OccurrenceLocation;
   reason: OccurrenceReason;
   details: string | null;
   parentName: string | null;
@@ -44,6 +46,7 @@ function rowFromOccurrence(o: {
     Autor: o.author.name,
     "E-mail autor": o.author.email ?? "",
     Motivo: OCCURRENCE_REASON_LABELS[o.reason],
+    Local: OCCURRENCE_LOCATION_LABELS[o.location],
     Detalhes: o.details ?? "",
     "Responsável (nome)": o.parentName ?? "",
     "Responsável (telefone)": o.parentPhone ?? "",

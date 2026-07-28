@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
+import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
 import { OccurrenceActivityPanel } from "@/components/occurrence-activity-panel";
 import { EditRegisteredAtPanel } from "@/components/edit-registered-at-panel";
 import { canContributeToOccurrence, canViewOccurrence } from "@/lib/occurrence-access";
@@ -83,6 +84,10 @@ export default async function ProfessorOccurrenceDetailPage({ params }: Props) {
           <dd className="text-sm text-slate-900">
             {o.student.name} <span className="text-slate-500">(RA {o.student.ra})</span>
           </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-medium uppercase text-slate-500">Local</dt>
+          <dd className="text-sm text-slate-900">{OCCURRENCE_LOCATION_LABELS[o.location]}</dd>
         </div>
         <div>
           <dt className="text-xs font-medium uppercase text-slate-500">Motivo</dt>

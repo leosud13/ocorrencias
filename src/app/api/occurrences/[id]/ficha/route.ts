@@ -33,6 +33,7 @@ export async function GET(_req: Request, { params }: Params) {
     controlNumber: o.controlNumber,
     registeredAt: o.registeredAt,
     occurredAt: o.occurredAt,
+    location: o.location,
     reason: o.reason,
     details: o.details,
     parentName: o.parentName,
