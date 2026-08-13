@@ -5,6 +5,7 @@ import { UserRole } from "@prisma/client";
 import { SignOutButton } from "@/components/sign-out-button";
 import { CadastrosMenu } from "@/components/navigation/cadastros-menu";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { getSchoolName } from "@/lib/school-config";
 
 export default async function GestaoLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -17,7 +18,7 @@ export default async function GestaoLayout({ children }: { children: React.React
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
           <div className="flex flex-wrap items-center gap-6">
-            <span className="font-semibold text-slate-900">Gestão Escolar</span>
+            <span className="font-semibold text-slate-900">{getSchoolName()}</span>
             <nav className="flex flex-wrap gap-4 text-sm">
               <Link className="text-brand-700 hover:underline" href="/gestao">
                 Painel

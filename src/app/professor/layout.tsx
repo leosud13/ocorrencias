@@ -4,7 +4,8 @@ import { getSession } from "@/lib/session";
 import { UserRole } from "@prisma/client";
 import { SignOutButton } from "@/components/sign-out-button";
 import { NotificationsBell } from "@/components/notifications-bell";
-import { USER_ROLE_LABELS } from "@/lib/user-roles";
+
+const SCHOOL_NAME = process.env.NEXT_PUBLIC_SCHOOL_NAME?.trim() || "Ocorrências Escolares";
 
 export default async function ProfessorLayout({
   children,
@@ -25,7 +26,7 @@ export default async function ProfessorLayout({
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-6">
-            <span className="font-semibold text-slate-900">Área do {USER_ROLE_LABELS[session.user.role]}</span>
+            <span className="font-semibold text-slate-900">{SCHOOL_NAME}</span>
             <nav className="flex gap-4 text-sm">
               <Link className="text-brand-700 hover:underline" href="/professor/ocorrencias">
                 Minhas ocorrências

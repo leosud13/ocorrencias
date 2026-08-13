@@ -2,6 +2,7 @@ import type { OccurrenceLocation, OccurrenceReason } from "@prisma/client";
 import { formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
+import { getSchoolName } from "@/lib/school-config";
 
 export type FichaOccurrence = {
   controlNumber: string;
@@ -89,12 +90,15 @@ function buildOccurrenceFichaContent(
   const includeTratativa = options.includeTratativa ?? true;
   const motivo = OCCURRENCE_REASON_LABELS[o.reason];
   const local = OCCURRENCE_LOCATION_LABELS[o.location];
+  const schoolName = getSchoolName();
   const title =
     heading === "h1"
       ? `<h1>Ficha de ocorrência escolar</h1>`
       : `<h2>Ocorrência nº ${esc(o.controlNumber)}</h2>`;
   const subtitle =
-    heading === "h1" ? `<p class="sub">Nº de controle: <strong>${esc(o.controlNumber)}</strong></p>` : "";
+    heading === "h1"
+      ? `<p class="sub">${esc(schoolName)} — Nº de controle: <strong>${esc(o.controlNumber)}</strong></p>`
+      : "";
 
   return `
   ${title}
