@@ -9,6 +9,7 @@ import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
 import { ManageOccurrencePanel } from "@/components/manage-occurrence-panel";
 import { OccurrenceActivityPanel } from "@/components/occurrence-activity-panel";
 import { EditRegisteredAtPanel } from "@/components/edit-registered-at-panel";
+import { DeleteOccurrenceButton } from "@/components/delete-occurrence-button";
 import { canContributeToOccurrence, canViewOccurrence } from "@/lib/occurrence-access";
 
 type Props = { params: { id: string } };
@@ -50,6 +51,7 @@ export default async function GestaoOccurrenceDetailPage({ params }: Props) {
           >
             Ficha para impressão (assinaturas)
           </a>
+          <DeleteOccurrenceButton occurrenceId={o.id} controlNumber={o.controlNumber} />
           <Link href="/gestao/ocorrencias" className="text-sm text-brand-700 hover:underline">
             ← Voltar à lista
           </Link>
