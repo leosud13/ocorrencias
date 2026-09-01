@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { StudentNameSearch } from "@/components/student-name-search";
 import { formatDateInputBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_OPTIONS } from "@/lib/occurrence-reasons";
 
 type Classe = { id: string; name: string };
-type Aluno = { id: string; name: string; ra: string; class: { name: string } };
 
 type Summary = {
   total: number;
@@ -54,9 +54,9 @@ export default function RelatoriosPage() {
   const [to, setTo] = useState(defaults.to);
   const [classId, setClassId] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [studentLabel, setStudentLabel] = useState("");
   const [reason, setReason] = useState("");
   const [classes, setClasses] = useState<Classe[]>([]);
-  const [students, setStudents] = useState<Aluno[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -67,20 +67,6 @@ export default function RelatoriosPage() {
       .then(setClasses)
       .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    const q = classId ? `?classId=${encodeURIComponent(classId)}` : "";
-    fetch(`/api/gestao/students${q}`)
-      .then((r) => r.json())
-      .then((rows: Aluno[]) => {
-        setStudents(rows);
-        setStudentId((cur) => {
-          if (cur && rows.some((s) => s.id === cur)) return cur;
-          return "";
-        });
-      })
-      .catch(() => setStudents([]));
-  }, [classId]);
 
   const queryString = useMemo(() => {
     const p = new URLSearchParams();
@@ -126,8 +112,8 @@ export default function RelatoriosPage() {
         </p>
       </div>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="overflow-visible rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="grid gap-4 overflow-visible sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <label className="block text-sm font-medium text-slate-700">De (ocorrência)</label>
             <input
@@ -153,6 +139,7 @@ export default function RelatoriosPage() {
               onChange={(e) => {
                 setClassId(e.target.value);
                 setStudentId("");
+                setStudentLabel("");
               }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             >
@@ -164,21 +151,16 @@ export default function RelatoriosPage() {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700">Aluno</label>
-            <select
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="">Todos</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} — {s.ra}
-                </option>
-              ))}
-            </select>
-          </div>
+          <StudentNameSearch
+            key={classId || "all"}
+            studentId={studentId}
+            studentLabel={studentLabel}
+            classId={classId || undefined}
+            onSelect={(s) => {
+              setStudentId(s?.id ?? "");
+              setStudentLabel(s?.name ?? "");
+            }}
+          />
           <div>
             <label className="block text-sm font-medium text-slate-700">Tipo (motivo)</label>
             <select
