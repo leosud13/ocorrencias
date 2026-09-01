@@ -7,6 +7,7 @@ export type OccurrenceListFilters = {
   from?: string | null;
   to?: string | null;
   q?: string | null;
+  studentId?: string | null;
   classId?: string | null;
   status?: OccurrenceStatusFilter | null;
 };
@@ -22,6 +23,7 @@ export function parseOccurrenceListFilters(
     from: searchParams.get("from")?.trim() || null,
     to: searchParams.get("to")?.trim() || null,
     q: searchParams.get("q")?.trim() || null,
+    studentId: searchParams.get("studentId")?.trim() || null,
     classId: searchParams.get("classId")?.trim() || null,
     status,
   };
@@ -31,7 +33,7 @@ export function buildOccurrenceListWhere(
   filters: OccurrenceListFilters,
 ): Prisma.OccurrenceWhereInput {
   const and: Prisma.OccurrenceWhereInput[] = [];
-  const { from, to, q, classId, status } = filters;
+  const { from, to, q, studentId, classId, status } = filters;
 
   if (from && to) {
     and.push({ occurredAt: dateRangeToBrasiliaUtc(from, to) });
@@ -41,7 +43,9 @@ export function buildOccurrenceListWhere(
 
   if (classId) and.push({ classId });
 
-  if (q) {
+  if (studentId) {
+    and.push({ studentId });
+  } else if (q) {
     and.push({
       OR: [
         { student: { name: { contains: q, mode: "insensitive" } } },

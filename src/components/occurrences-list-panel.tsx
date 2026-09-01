@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { StudentNameSearch } from "@/components/student-name-search";
 import { formatDateInputBR, formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 import type { OccurrenceStatusFilter } from "@/lib/occurrence-list-filters";
@@ -60,13 +61,14 @@ export function OccurrencesListPanel({ mode }: Props) {
   const [classes, setClasses] = useState<Classe[]>([]);
   const [from, setFrom] = useState(defaults.from);
   const [to, setTo] = useState(defaults.to);
-  const [q, setQ] = useState("");
+  const [studentId, setStudentId] = useState("");
+  const [studentLabel, setStudentLabel] = useState("");
   const [classId, setClassId] = useState("");
   const [status, setStatus] = useState<OccurrenceStatusFilter | "">("");
   const [applied, setApplied] = useState({
     from: defaults.from,
     to: defaults.to,
-    q: "",
+    studentId: "",
     classId: "",
     status: "" as OccurrenceStatusFilter | "",
   });
@@ -90,7 +92,7 @@ export function OccurrencesListPanel({ mode }: Props) {
     setLoading(true);
     const params = new URLSearchParams();
     params.set("page", String(page));
-    if (applied.q) params.set("q", applied.q);
+    if (applied.studentId) params.set("studentId", applied.studentId);
     if (applied.classId) params.set("classId", applied.classId);
     if (applied.status) params.set("status", applied.status);
     if (isGestao) {
@@ -115,7 +117,7 @@ export function OccurrencesListPanel({ mode }: Props) {
 
   function applyFilters() {
     setSelected(new Set());
-    setApplied({ from, to, q: q.trim(), classId, status });
+    setApplied({ from, to, studentId, classId, status });
     setPage(1);
   }
 
@@ -153,7 +155,7 @@ export function OccurrencesListPanel({ mode }: Props) {
           </h1>
           <p className="text-sm text-slate-600">
             {isGestao
-              ? "Filtre por nome, turma e status. Selecione ocorrências para imprimir fichas."
+              ? "Filtre por aluno, turma e status. Selecione ocorrências para imprimir fichas."
               : "Você visualiza apenas os registros criados por você."}
           </p>
         </div>
@@ -165,29 +167,36 @@ export function OccurrencesListPanel({ mode }: Props) {
         </Link>
       </div>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="overflow-visible rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <form
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
+          className="grid gap-4 overflow-visible sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
           onSubmit={(e) => {
             e.preventDefault();
             applyFilters();
           }}
         >
           <div className={isGestao ? "" : "sm:col-span-2"}>
-            <label className="block text-sm font-medium text-slate-700">Nome do aluno</label>
-            <input
-              type="search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar por nome, RA ou turma…"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            <StudentNameSearch
+              key={classId || "all"}
+              label="Nome do aluno"
+              studentId={studentId}
+              studentLabel={studentLabel}
+              classId={classId || undefined}
+              onSelect={(s) => {
+                setStudentId(s?.id ?? "");
+                setStudentLabel(s?.name ?? "");
+              }}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700">Turma</label>
             <select
               value={classId}
-              onChange={(e) => setClassId(e.target.value)}
+              onChange={(e) => {
+                setClassId(e.target.value);
+                setStudentId("");
+                setStudentLabel("");
+              }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             >
               <option value="">Todas</option>

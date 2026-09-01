@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { UserRole } from "@prisma/client";
 import { getSession } from "@/lib/session";
 import { searchStudentsByName } from "@/lib/student-search";
 
 export async function GET(req: Request) {
   const session = await getSession();
-  if (!session?.user?.id || session.user.role !== UserRole.GESTAO) {
-    return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
   const { searchParams } = new URL(req.url);

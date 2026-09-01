@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { StudentNameSearch } from "@/components/student-name-search";
 import { dateTimeInputBRToISOString, formatDateTimeInputBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_OPTIONS } from "@/lib/occurrence-reasons";
 import { OCCURRENCE_LOCATION_OPTIONS } from "@/lib/occurrence-locations";
@@ -11,7 +12,6 @@ import {
 } from "@/components/quick-occurrences-modal";
 
 type Classe = { id: string; name: string };
-type Aluno = { id: string; name: string; ra: string };
 
 type Props = {
   redirectPath: string;
@@ -26,9 +26,9 @@ export function OccurrenceForm({
 }: Props) {
   const router = useRouter();
   const [classes, setClasses] = useState<Classe[]>([]);
-  const [students, setStudents] = useState<Aluno[]>([]);
   const [classId, setClassId] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [studentLabel, setStudentLabel] = useState("");
   const [reason, setReason] = useState("");
   const [location, setLocation] = useState("");
   const [details, setDetails] = useState("");
@@ -45,21 +45,13 @@ export function OccurrenceForm({
       .catch(() => setError("Não foi possível carregar as turmas."));
   }, []);
 
-  useEffect(() => {
-    setStudentId("");
-    if (!classId) {
-      setStudents([]);
-      return;
-    }
-    fetch(`/api/classes/${classId}/students`)
-      .then((r) => r.json())
-      .then(setStudents)
-      .catch(() => setStudents([]));
-  }, [classId]);
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!studentId) {
+      setError("Selecione o aluno na lista de sugestões.");
+      return;
+    }
     setLoading(true);
     const fd = new FormData();
     fd.set("classId", classId);
@@ -92,13 +84,17 @@ export function OccurrenceForm({
         <p className="text-sm text-slate-600">{description}</p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <form onSubmit={onSubmit} className="space-y-4 overflow-visible rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
           <label className="block text-sm font-medium text-slate-700">Turma (classe)</label>
           <select
             required
             value={classId}
-            onChange={(e) => setClassId(e.target.value)}
+            onChange={(e) => {
+              setClassId(e.target.value);
+              setStudentId("");
+              setStudentLabel("");
+            }}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="">Selecione…</option>
@@ -110,23 +106,18 @@ export function OccurrenceForm({
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700">Aluno</label>
-          <select
-            required
-            value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
-            disabled={!classId}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
-          >
-            <option value="">{classId ? "Selecione o aluno…" : "Escolha primeiro a turma"}</option>
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name} — RA {s.ra}
-              </option>
-            ))}
-          </select>
-        </div>
+        <StudentNameSearch
+          key={classId || "none"}
+          studentId={studentId}
+          studentLabel={studentLabel}
+          classId={classId || undefined}
+          disabled={!classId}
+          placeholder={classId ? "Digite o nome do aluno…" : "Escolha primeiro a turma"}
+          onSelect={(s) => {
+            setStudentId(s?.id ?? "");
+            setStudentLabel(s?.name ?? "");
+          }}
+        />
 
         <div>
           <label className="block text-sm font-medium text-slate-700">Data da ocorrência</label>

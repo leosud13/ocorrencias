@@ -13,10 +13,21 @@ type Props = {
   studentId: string;
   studentLabel: string;
   classId?: string;
+  label?: string;
+  placeholder?: string;
+  disabled?: boolean;
   onSelect: (student: StudentSearchHit | null) => void;
 };
 
-export function StudentNameSearch({ studentId, studentLabel, classId, onSelect }: Props) {
+export function StudentNameSearch({
+  studentId,
+  studentLabel,
+  classId,
+  label = "Aluno",
+  placeholder = "Digite o nome do aluno…",
+  disabled = false,
+  onSelect,
+}: Props) {
   const [query, setQuery] = useState(studentLabel);
   const [hits, setHits] = useState<StudentSearchHit[]>([]);
   const [open, setOpen] = useState(false);
@@ -34,6 +45,11 @@ export function StudentNameSearch({ studentId, studentLabel, classId, onSelect }
 
   useEffect(() => {
     const q = query.trim();
+    if (disabled) {
+      setHits([]);
+      setOpen(false);
+      return;
+    }
     if (studentId && q === studentLabel.trim()) {
       setHits([]);
       setOpen(false);
@@ -51,7 +67,7 @@ export function StudentNameSearch({ studentId, studentLabel, classId, onSelect }
       setLoading(true);
       const params = new URLSearchParams({ q });
       if (classId) params.set("classId", classId);
-      fetch(`/api/gestao/students/search?${params}`)
+      fetch(`/api/students/search?${params}`)
         .then((r) => r.json())
         .then((rows: StudentSearchHit[]) => {
           setHits(Array.isArray(rows) ? rows : []);
@@ -62,7 +78,7 @@ export function StudentNameSearch({ studentId, studentLabel, classId, onSelect }
     }, 250);
 
     return () => clearTimeout(timer);
-  }, [query, studentId, studentLabel, classId]);
+  }, [query, studentId, studentLabel, classId, disabled]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -90,16 +106,17 @@ export function StudentNameSearch({ studentId, studentLabel, classId, onSelect }
     onSelect(s);
   }
 
-  const showDropdown = open && query.trim().length >= 1;
+  const showDropdown = !disabled && open && query.trim().length >= 1;
 
   return (
     <div ref={wrapRef} className="relative z-30">
-      <label className="block text-sm font-medium text-slate-700">Aluno</label>
+      <label className="block text-sm font-medium text-slate-700">{label}</label>
       <div className="mt-1 flex gap-2">
         <div className="relative min-w-0 flex-1">
           <input
             type="text"
             value={query}
+            disabled={disabled}
             onChange={(e) => {
               const next = e.target.value;
               setQuery(next);
@@ -107,10 +124,10 @@ export function StudentNameSearch({ studentId, studentLabel, classId, onSelect }
               if (next.trim().length >= 1) setOpen(true);
             }}
             onFocus={() => {
-              if (query.trim().length >= 1) setOpen(true);
+              if (!disabled && query.trim().length >= 1) setOpen(true);
             }}
-            placeholder="Digite o nome do aluno…"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            placeholder={placeholder}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100 disabled:text-slate-500"
             autoComplete="off"
             role="combobox"
             aria-expanded={showDropdown}
@@ -150,7 +167,7 @@ export function StudentNameSearch({ studentId, studentLabel, classId, onSelect }
             </div>
           )}
         </div>
-        {(studentId || query) && (
+        {(studentId || query) && !disabled && (
           <button
             type="button"
             onClick={clear}
