@@ -5,6 +5,7 @@ import { UserRole } from "@prisma/client";
 import { SignOutButton } from "@/components/sign-out-button";
 import { CadastrosMenu } from "@/components/navigation/cadastros-menu";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { FloatingNewOccurrenceButton } from "@/components/floating-new-occurrence-button";
 import { getSchoolName } from "@/lib/school-config";
 
 export default async function GestaoLayout({ children }: { children: React.ReactNode }) {
@@ -46,14 +47,10 @@ export default async function GestaoLayout({ children }: { children: React.React
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
-      <Link
+      <FloatingNewOccurrenceButton
         href="/gestao/ocorrencias/nova"
-        aria-label="Adicionar nova ocorrência"
-        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-3xl font-semibold leading-none text-white shadow-lg shadow-emerald-900/20 hover:bg-emerald-700 md:bottom-6 md:right-6 md:h-auto md:w-auto md:px-5 md:py-3 md:text-sm"
-      >
-        <span aria-hidden="true">+</span>
-        <span className="hidden md:inline">&nbsp;Nova ocorrência</span>
-      </Link>
+        hiddenPrefixes={["/gestao/ocorrencias", "/gestao/relatorios"]}
+      />
     </div>
   );
 }
