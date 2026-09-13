@@ -12,10 +12,8 @@ import {
   canViewOccurrence,
 } from "@/lib/occurrence-access";
 import { dateTimeInputBRToISOString } from "@/lib/date-time";
-import {
-  hasActionTaken,
-  notifyOccurrenceActionTaken,
-} from "@/lib/occurrence-notifications";
+import { hasActionTaken } from "@/lib/occurrence-notifications";
+import { appendOccurrenceAction, occurrenceActionInclude } from "@/lib/occurrence-actions";
 
 type Params = { params: { id: string } };
 
@@ -27,6 +25,10 @@ const occurrenceInclude = {
   comments: {
     orderBy: { createdAt: "asc" as const },
     include: { author: { select: { name: true, role: true } } },
+  },
+  actions: {
+    orderBy: [{ createdAt: "desc" as const }, { id: "desc" as const }],
+    include: occurrenceActionInclude,
   },
 };
 
@@ -112,10 +114,9 @@ export async function PATCH(req: Request, { params }: Params) {
       );
     }
 
-    data.parentName = body.parentName?.trim() || null;
-    data.parentPhone = body.parentPhone?.trim() || null;
-    data.parentEmail = body.parentEmail?.trim() || null;
-    data.actionTaken = body.actionTaken?.trim() || null;
+    if (body.parentName !== undefined) data.parentName = body.parentName?.trim() || null;
+    if (body.parentPhone !== undefined) data.parentPhone = body.parentPhone?.trim() || null;
+    if (body.parentEmail !== undefined) data.parentEmail = body.parentEmail?.trim() || null;
   }
 
   if (!hasRegisteredAt && !hasTratativa) {
@@ -124,25 +125,28 @@ export async function PATCH(req: Request, { params }: Params) {
 
   const nextActionTaken =
     body.actionTaken !== undefined ? body.actionTaken?.trim() || null : null;
-  const shouldNotifyActionTaken =
-    body.actionTaken !== undefined &&
-    hasActionTaken(nextActionTaken) &&
-    nextActionTaken !== (existing.actionTaken?.trim() || "");
+  const shouldAppendAction =
+    body.actionTaken !== undefined && hasActionTaken(nextActionTaken);
 
-  const updated = await prisma.occurrence.update({
-    where: { id: params.id },
-    data,
-    include: occurrenceInclude,
-  });
-
-  if (shouldNotifyActionTaken) {
-    await notifyOccurrenceActionTaken({
-      authorId: existing.authorId,
-      actorId: session.user.id,
-      occurrenceId: existing.id,
-      controlNumber: existing.controlNumber,
+  if (Object.keys(data).length > 0) {
+    await prisma.occurrence.update({
+      where: { id: params.id },
+      data,
     });
   }
+
+  if (shouldAppendAction && nextActionTaken) {
+    await appendOccurrenceAction({
+      occurrenceId: existing.id,
+      actorId: session.user.id,
+      content: nextActionTaken,
+    });
+  }
+
+  const updated = await prisma.occurrence.findUniqueOrThrow({
+    where: { id: params.id },
+    include: occurrenceInclude,
+  });
 
   return NextResponse.json(updated);
 }

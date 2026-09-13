@@ -29,6 +29,13 @@ export default async function GestaoOccurrenceDetailPage({ params }: Props) {
         orderBy: { createdAt: "asc" },
         include: { author: { select: { name: true, role: true } } },
       },
+      actions: {
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        include: {
+          author: { select: { id: true, name: true } },
+          lastEditedBy: { select: { id: true, name: true } },
+        },
+      },
     },
   });
 
@@ -124,8 +131,15 @@ export default async function GestaoOccurrenceDetailPage({ params }: Props) {
           parentName: o.parentName,
           parentPhone: o.parentPhone,
           parentEmail: o.parentEmail,
-          actionTaken: o.actionTaken,
         }}
+        initialActions={o.actions.map((action) => ({
+          id: action.id,
+          content: action.content,
+          createdAt: action.createdAt.toISOString(),
+          updatedAt: action.updatedAt.toISOString(),
+          author: action.author,
+          lastEditedBy: action.lastEditedBy,
+        }))}
       />
     </div>
   );

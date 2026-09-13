@@ -26,6 +26,13 @@ export default async function ProfessorOccurrenceDetailPage({ params }: Props) {
         orderBy: { createdAt: "asc" },
         include: { author: { select: { name: true, role: true } } },
       },
+      actions: {
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        include: {
+          author: { select: { id: true, name: true } },
+          lastEditedBy: { select: { id: true, name: true } },
+        },
+      },
     },
   });
 
@@ -116,7 +123,7 @@ export default async function ProfessorOccurrenceDetailPage({ params }: Props) {
         canContribute={canContributeToOccurrence(session.user, o)}
       />
 
-      {(o.parentName || o.parentPhone || o.parentEmail || o.actionTaken) && (
+      {(o.parentName || o.parentPhone || o.parentEmail || o.actions.length > 0 || o.actionTaken) && (
         <section className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-6">
           <h2 className="text-lg font-medium text-emerald-900">Retorno da gestão</h2>
           <dl className="mt-3 grid gap-3 sm:grid-cols-2 text-sm">
@@ -132,11 +139,38 @@ export default async function ProfessorOccurrenceDetailPage({ params }: Props) {
               <dt className="text-xs font-medium text-emerald-800">E-mail</dt>
               <dd>{o.parentEmail || "—"}</dd>
             </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-medium text-emerald-800">Ação tomada / encaminhamento</dt>
-              <dd className="whitespace-pre-wrap">{o.actionTaken || "—"}</dd>
-            </div>
           </dl>
+          <div className="mt-4 space-y-3">
+            <h3 className="text-sm font-medium text-emerald-900">Histórico de ações</h3>
+            {o.actions.length === 0 ? (
+              <p className="whitespace-pre-wrap text-sm text-emerald-950">{o.actionTaken || "—"}</p>
+            ) : (
+              <ul className="space-y-3">
+                {o.actions.map((action, index) => {
+                  const edited =
+                    new Date(action.updatedAt).getTime() - new Date(action.createdAt).getTime() >
+                    1000;
+                  return (
+                    <li
+                      key={action.id}
+                      className="rounded-lg border border-emerald-200 bg-white/70 px-3 py-2"
+                    >
+                      <p className="text-xs font-medium uppercase text-emerald-800">
+                        Ação {o.actions.length - index}
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-emerald-950">
+                        {action.content}
+                      </p>
+                      <p className="mt-1 text-xs text-emerald-800/80">
+                        Criada em {formatDateTimeBR(action.createdAt)}
+                        {edited && <> · Editada em {formatDateTimeBR(action.updatedAt)}</>}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </section>
       )}
     </div>

@@ -37,7 +37,7 @@ export async function GET(req: Request) {
       include: {
         author: { select: { name: true } },
         schoolClass: { select: { name: true } },
-        student: { select: { name: true, ra: true } },
+        student: { select: { id: true, name: true, ra: true } },
         attachments: { select: { id: true } },
       },
     }),

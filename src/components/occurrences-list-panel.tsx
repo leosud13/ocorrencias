@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BatchActionModal } from "@/components/batch-action-modal";
 import { StudentNameSearch } from "@/components/student-name-search";
 import { formatDateInputBR, formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
@@ -18,7 +19,7 @@ type OccurrenceRow = {
   actionTaken: string | null;
   author: { name: string };
   schoolClass: { name: string };
-  student: { name: string; ra: string };
+  student: { id: string; name: string; ra: string };
   attachments?: { id: string }[];
 };
 
@@ -77,7 +78,12 @@ export function OccurrencesListPanel({ mode }: Props) {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selectedMeta, setSelectedMeta] = useState<
+    Record<string, { studentId: string; studentName: string; studentRa: string }>
+  >({});
   const [loading, setLoading] = useState(false);
+  const [selectingAll, setSelectingAll] = useState(false);
+  const [batchOpen, setBatchOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -117,21 +123,62 @@ export function OccurrencesListPanel({ mode }: Props) {
 
   function applyFilters() {
     setSelected(new Set());
+    setSelectedMeta({});
     setApplied({ from, to, studentId, classId, status });
     setPage(1);
   }
 
   const allVisibleSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
 
+  const selectedStudentInfo = useMemo(() => {
+    if (selected.size === 0) return { sameStudent: true, label: null as string | null };
+    const metas = [...selected].map((id) => selectedMeta[id]).filter(Boolean);
+    if (metas.length !== selected.size) {
+      return { sameStudent: false, label: null as string | null };
+    }
+    const ids = new Set(metas.map((m) => m.studentId));
+    if (ids.size !== 1) return { sameStudent: false, label: null as string | null };
+    const first = metas[0];
+    return {
+      sameStudent: true,
+      label: `${first.studentName} (RA ${first.studentRa})`,
+    };
+  }, [selected, selectedMeta]);
+
+  function rememberRows(list: OccurrenceRow[]) {
+    setSelectedMeta((prev) => {
+      const next = { ...prev };
+      for (const row of list) {
+        next[row.id] = {
+          studentId: row.student.id,
+          studentName: row.student.name,
+          studentRa: row.student.ra,
+        };
+      }
+      return next;
+    });
+  }
+
   function toggleAll() {
     if (allVisibleSelected) {
-      setSelected(new Set());
+      setSelected((prev) => {
+        const next = new Set(prev);
+        for (const r of rows) next.delete(r.id);
+        return next;
+      });
       return;
     }
-    setSelected(new Set(rows.map((r) => r.id)));
+    rememberRows(rows);
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const r of rows) next.add(r.id);
+      return next;
+    });
   }
 
   function toggleOne(id: string) {
+    const row = rows.find((r) => r.id === id);
+    if (row) rememberRows([row]);
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -140,10 +187,60 @@ export function OccurrencesListPanel({ mode }: Props) {
     });
   }
 
+  async function selectAllFiltered() {
+    setError(null);
+    setSelectingAll(true);
+    const params = new URLSearchParams();
+    if (applied.studentId) params.set("studentId", applied.studentId);
+    if (applied.classId) params.set("classId", applied.classId);
+    if (applied.status) params.set("status", applied.status);
+    if (applied.from) params.set("from", applied.from);
+    if (applied.to) params.set("to", applied.to);
+    const res = await fetch(`/api/gestao/occurrences/ids?${params}`);
+    setSelectingAll(false);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setError(data.error || "Não foi possível selecionar todas as filtradas.");
+      return;
+    }
+    const ids = Array.isArray(data.ids) ? (data.ids as string[]) : [];
+    const items = Array.isArray(data.items)
+      ? (data.items as {
+          id: string;
+          studentId: string;
+          studentName: string;
+          studentRa: string;
+        }[])
+      : [];
+    setSelected(new Set(ids));
+    const meta: Record<string, { studentId: string; studentName: string; studentRa: string }> = {};
+    for (const item of items) {
+      meta[item.id] = {
+        studentId: item.studentId,
+        studentName: item.studentName,
+        studentRa: item.studentRa,
+      };
+    }
+    setSelectedMeta(meta);
+  }
+
   function printSelected() {
     if (selected.size === 0) return;
     const ids = [...selected].join(",");
     window.open(`/api/occurrences/batch-ficha?ids=${encodeURIComponent(ids)}`, "_blank");
+  }
+
+  function openBatchAction() {
+    setError(null);
+    if (selected.size === 0) {
+      setError("Selecione ao menos uma ocorrência.");
+      return;
+    }
+    if (!selectedStudentInfo.sameStudent) {
+      setError("Selecione apenas ocorrências do mesmo aluno para registrar uma ação em massa.");
+      return;
+    }
+    setBatchOpen(true);
   }
 
   return (
@@ -155,7 +252,7 @@ export function OccurrencesListPanel({ mode }: Props) {
           </h1>
           <p className="text-sm text-slate-600">
             {isGestao
-              ? "Filtre por aluno, turma e status. Selecione ocorrências para imprimir fichas."
+              ? "Filtre por aluno, turma e status. Selecione ocorrências do mesmo aluno para ação em massa ou impressão."
               : "Você visualiza apenas os registros criados por você."}
           </p>
         </div>
@@ -250,20 +347,54 @@ export function OccurrencesListPanel({ mode }: Props) {
               {loading ? "Carregando…" : "Filtrar"}
             </button>
             {isGestao && (
-              <button
-                type="button"
-                disabled={selected.size === 0}
-                onClick={printSelected}
-                className="rounded-lg border border-brand-600 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-50"
-              >
-                Imprimir selecionadas ({selected.size})
-              </button>
+              <>
+                <button
+                  type="button"
+                  disabled={loading || selectingAll || total === 0}
+                  onClick={selectAllFiltered}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {selectingAll ? "Selecionando…" : `Selecionar todas filtradas (${total})`}
+                </button>
+                <button
+                  type="button"
+                  disabled={selected.size === 0}
+                  onClick={openBatchAction}
+                  className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-50"
+                >
+                  Registrar ação em massa ({selected.size})
+                </button>
+                <button
+                  type="button"
+                  disabled={selected.size === 0}
+                  onClick={printSelected}
+                  className="rounded-lg border border-brand-600 px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50 disabled:opacity-50"
+                >
+                  Imprimir selecionadas ({selected.size})
+                </button>
+              </>
             )}
           </div>
         </form>
       </section>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {isGestao && (
+        <BatchActionModal
+          open={batchOpen}
+          selectedCount={selected.size}
+          selectedIds={[...selected]}
+          studentLabel={selectedStudentInfo.label}
+          onClose={() => setBatchOpen(false)}
+          onSaved={() => {
+            setBatchOpen(false);
+            setSelected(new Set());
+            setSelectedMeta({});
+            load();
+          }}
+        />
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <table className="min-w-full text-left text-sm">

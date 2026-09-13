@@ -51,6 +51,8 @@ model User {
   blockedAt    DateTime?
   occurrences  Occurrence[]  @relation("AuthorOccurrences")
   comments     OccurrenceComment[] @relation("OccurrenceCommentAuthor")
+  occurrenceActionsCreated OccurrenceAction[] @relation("OccurrenceActionAuthor")
+  occurrenceActionsEdited  OccurrenceAction[] @relation("OccurrenceActionEditor")
   notifications Notification[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -96,6 +98,7 @@ model Occurrence {
   parentPhone     String?
   parentEmail     String?
   actionTaken     String?
+  actions         OccurrenceAction[]
   attachments     OccurrenceAttachment[]
   comments        OccurrenceComment[]
   notifications   Notification[]
@@ -104,7 +107,25 @@ model Occurrence {
 
   @@index([authorId])
   @@index([classId])
+  @@index([studentId])
   @@index([registeredAt])
+}
+
+model OccurrenceAction {
+  id             String     @id @default(cuid())
+  occurrenceId   String
+  occurrence     Occurrence @relation(fields: [occurrenceId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User       @relation("OccurrenceActionAuthor", fields: [authorId], references: [id])
+  content        String
+  lastEditedById String?
+  lastEditedBy   User?      @relation("OccurrenceActionEditor", fields: [lastEditedById], references: [id])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([occurrenceId])
+  @@index([authorId])
+  @@index([lastEditedById])
 }
 
 model OccurrenceComment {
