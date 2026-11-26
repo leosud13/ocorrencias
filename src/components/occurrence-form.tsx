@@ -30,6 +30,7 @@ export function OccurrenceForm({
   const [studentId, setStudentId] = useState("");
   const [studentLabel, setStudentLabel] = useState("");
   const [reason, setReason] = useState("");
+  const [reasonOther, setReasonOther] = useState("");
   const [location, setLocation] = useState("");
   const [details, setDetails] = useState("");
   const [occurredAt, setOccurredAt] = useState(() => formatDateTimeInputBR());
@@ -52,11 +53,16 @@ export function OccurrenceForm({
       setError("Selecione o aluno na lista de sugestões.");
       return;
     }
+    if (reason === "OUTROS" && !reasonOther.trim()) {
+      setError("Descreva o motivo em Outros.");
+      return;
+    }
     setLoading(true);
     const fd = new FormData();
     fd.set("classId", classId);
     fd.set("studentId", studentId);
     fd.set("reason", reason);
+    if (reason === "OUTROS") fd.set("reasonOther", reasonOther.trim());
     fd.set("location", location);
     fd.set("occurredAt", dateTimeInputBRToISOString(occurredAt));
     if (details.trim()) fd.set("details", details.trim());
@@ -152,7 +158,11 @@ export function OccurrenceForm({
           <select
             required
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setReason(next);
+              if (next !== "OUTROS") setReasonOther("");
+            }}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="">Selecione…</option>
@@ -163,6 +173,22 @@ export function OccurrenceForm({
             ))}
           </select>
         </div>
+
+        {reason === "OUTROS" && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700">
+              Descreva o motivo <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={reasonOther}
+              onChange={(e) => setReasonOther(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              placeholder="Informe o motivo da ocorrência…"
+            />
+          </div>
+        )}
 
         <div>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -192,7 +218,10 @@ export function OccurrenceForm({
           onSelect={(template) => {
             const next = applyQuickOccurrenceTemplate(template, details, reason);
             setDetails(next.details);
-            if (next.reason) setReason(next.reason);
+            if (next.reason) {
+              setReason(next.reason);
+              if (next.reason !== "OUTROS") setReasonOther("");
+            }
           }}
         />
 

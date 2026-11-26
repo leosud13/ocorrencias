@@ -95,6 +95,7 @@ model Occurrence {
   occurredAt      DateTime
   location        OccurrenceLocation
   reason          OccurrenceReason
+  reasonOther     String?
   details         String?
   parentName      String?
   parentPhone     String?

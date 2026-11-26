@@ -77,6 +77,7 @@ export async function POST(req: Request) {
   const classId = String(form.get("classId") ?? "");
   const studentId = String(form.get("studentId") ?? "");
   const reason = String(form.get("reason") ?? "");
+  const reasonOtherRaw = String(form.get("reasonOther") ?? "").trim();
   const location = String(form.get("location") ?? "");
   const details = form.get("details") ? String(form.get("details")) : null;
   const occurredAtRaw = String(form.get("occurredAt") ?? "");
@@ -91,6 +92,16 @@ export async function POST(req: Request) {
   if (!REASONS.has(reason)) {
     return NextResponse.json({ error: "Motivo inválido." }, { status: 400 });
   }
+
+  if (reason === OccurrenceReason.OUTROS && !reasonOtherRaw) {
+    return NextResponse.json(
+      { error: "Descreva o motivo quando selecionar Outros." },
+      { status: 400 },
+    );
+  }
+
+  const reasonOther =
+    reason === OccurrenceReason.OUTROS ? reasonOtherRaw : null;
 
   if (!LOCATIONS.has(location)) {
     return NextResponse.json({ error: "Local inválido." }, { status: 400 });
@@ -122,6 +133,7 @@ export async function POST(req: Request) {
         occurredAt,
         location: location as OccurrenceLocation,
         reason: reason as OccurrenceReason,
+        reasonOther,
         details: details?.trim() || null,
       },
     });

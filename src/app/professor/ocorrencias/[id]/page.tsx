@@ -98,7 +98,10 @@ export default async function ProfessorOccurrenceDetailPage({ params }: Props) {
         </div>
         <div>
           <dt className="text-xs font-medium uppercase text-slate-500">Motivo</dt>
-          <dd className="text-sm text-slate-900">{OCCURRENCE_REASON_LABELS[o.reason]}</dd>
+          <dd className="text-sm text-slate-900">
+            {OCCURRENCE_REASON_LABELS[o.reason]}
+            {o.reason === "OUTROS" && o.reasonOther ? `: ${o.reasonOther}` : ""}
+          </dd>
         </div>
         <div className="sm:col-span-2">
           <dt className="text-xs font-medium uppercase text-slate-500">Detalhes</dt>

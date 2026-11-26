@@ -1,6 +1,6 @@
 import type { OccurrenceLocation, OccurrenceReason } from "@prisma/client";
 import { formatDateTimeBR } from "@/lib/date-time";
-import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
+import { formatOccurrenceReason } from "@/lib/occurrence-reasons";
 import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
 import { getSchoolName } from "@/lib/school-config";
 
@@ -10,6 +10,7 @@ export type FichaOccurrence = {
   occurredAt: Date;
   location: OccurrenceLocation;
   reason: OccurrenceReason;
+  reasonOther?: string | null;
   details: string | null;
   parentName: string | null;
   parentPhone: string | null;
@@ -88,7 +89,7 @@ function buildOccurrenceFichaContent(
   options: FichaContentOptions = {},
 ): string {
   const includeTratativa = options.includeTratativa ?? true;
-  const motivo = OCCURRENCE_REASON_LABELS[o.reason];
+  const motivo = formatOccurrenceReason(o.reason, o.reasonOther);
   const local = OCCURRENCE_LOCATION_LABELS[o.location];
   const schoolName = getSchoolName();
   const title =

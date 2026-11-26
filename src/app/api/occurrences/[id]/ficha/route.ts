@@ -35,6 +35,7 @@ export async function GET(_req: Request, { params }: Params) {
     occurredAt: o.occurredAt,
     location: o.location,
     reason: o.reason,
+    reasonOther: o.reasonOther,
     details: o.details,
     parentName: o.parentName,
     parentPhone: o.parentPhone,

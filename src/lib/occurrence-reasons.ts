@@ -20,3 +20,14 @@ export const OCCURRENCE_REASON_LABELS: Record<OccurrenceReason, string> = {
 export const OCCURRENCE_REASON_OPTIONS = (
   Object.keys(OCCURRENCE_REASON_LABELS) as OccurrenceReason[]
 ).map((value) => ({ value, label: OCCURRENCE_REASON_LABELS[value] }));
+
+export function formatOccurrenceReason(
+  reason: OccurrenceReason,
+  reasonOther?: string | null,
+): string {
+  const label = OCCURRENCE_REASON_LABELS[reason];
+  if (reason === OccurrenceReason.OUTROS && reasonOther?.trim()) {
+    return `${label}: ${reasonOther.trim()}`;
+  }
+  return label;
+}

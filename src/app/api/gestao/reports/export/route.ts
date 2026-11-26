@@ -4,7 +4,7 @@ import { OccurrenceLocation, OccurrenceReason, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatDateTimeBR } from "@/lib/date-time";
 import { getSession } from "@/lib/session";
-import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
+import { formatOccurrenceReason } from "@/lib/occurrence-reasons";
 import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
 import { buildOccurrenceWhere, parseReportQuery } from "@/lib/report-filters";
 
@@ -26,6 +26,7 @@ function rowFromOccurrence(o: {
   occurredAt: Date;
   location: OccurrenceLocation;
   reason: OccurrenceReason;
+  reasonOther: string | null;
   details: string | null;
   parentName: string | null;
   parentPhone: string | null;
@@ -45,7 +46,7 @@ function rowFromOccurrence(o: {
     RA: o.student.ra,
     Autor: o.author.name,
     "E-mail autor": o.author.email ?? "",
-    Motivo: OCCURRENCE_REASON_LABELS[o.reason],
+    Motivo: formatOccurrenceReason(o.reason, o.reasonOther),
     Local: OCCURRENCE_LOCATION_LABELS[o.location],
     Detalhes: o.details ?? "",
     "Responsável (nome)": o.parentName ?? "",
