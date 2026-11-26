@@ -1,7 +1,12 @@
-import type { OccurrenceLocation, OccurrenceReason } from "@prisma/client";
+import type {
+  OccurrenceLocation,
+  OccurrenceReason,
+  OccurrenceStudentRole,
+} from "@prisma/client";
 import { formatDateTimeBR } from "@/lib/date-time";
 import { formatOccurrenceReason } from "@/lib/occurrence-reasons";
 import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
+import { formatOccurrenceStudentRoles } from "@/lib/occurrence-student-roles";
 import { getSchoolName } from "@/lib/school-config";
 
 export type FichaOccurrence = {
@@ -11,6 +16,7 @@ export type FichaOccurrence = {
   location: OccurrenceLocation;
   reason: OccurrenceReason;
   reasonOther?: string | null;
+  studentRoles?: OccurrenceStudentRole[] | null;
   details: string | null;
   parentName: string | null;
   parentPhone: string | null;
@@ -107,6 +113,7 @@ function buildOccurrenceFichaContent(
 
   <table>
     <tr><th>Aluno</th><td>${esc(o.student.name)} — RA ${esc(o.student.ra)}</td></tr>
+    <tr><th>Condição do aluno</th><td>${esc(formatOccurrenceStudentRoles(o.studentRoles))}</td></tr>
     <tr><th>Turma</th><td>${esc(o.schoolClass.name)}</td></tr>
     <tr><th>Professor / agente (autor do registro)</th><td>${esc(o.author.name)}${o.author.email ? ` (${esc(o.author.email)})` : ""}</td></tr>
     <tr><th>Data de registro no sistema</th><td>${esc(fmtDate(o.registeredAt))}</td></tr>

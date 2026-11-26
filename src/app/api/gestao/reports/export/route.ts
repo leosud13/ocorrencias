@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
-import { OccurrenceLocation, OccurrenceReason, UserRole } from "@prisma/client";
+import {
+  OccurrenceLocation,
+  OccurrenceReason,
+  OccurrenceStudentRole,
+  UserRole,
+} from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatDateTimeBR } from "@/lib/date-time";
 import { getSession } from "@/lib/session";
 import { formatOccurrenceReason } from "@/lib/occurrence-reasons";
 import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
+import { formatOccurrenceStudentRoles } from "@/lib/occurrence-student-roles";
 import { buildOccurrenceWhere, parseReportQuery } from "@/lib/report-filters";
 
 function excelSheetName(name: string, used: Set<string>): string {
@@ -27,6 +33,7 @@ function rowFromOccurrence(o: {
   location: OccurrenceLocation;
   reason: OccurrenceReason;
   reasonOther: string | null;
+  studentRoles: OccurrenceStudentRole[];
   details: string | null;
   parentName: string | null;
   parentPhone: string | null;
@@ -44,6 +51,7 @@ function rowFromOccurrence(o: {
     Turma: o.schoolClass.name,
     Aluno: o.student.name,
     RA: o.student.ra,
+    "Condição do aluno": formatOccurrenceStudentRoles(o.studentRoles),
     Autor: o.author.name,
     "E-mail autor": o.author.email ?? "",
     Motivo: formatOccurrenceReason(o.reason, o.reasonOther),

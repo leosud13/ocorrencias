@@ -42,6 +42,12 @@ enum OccurrenceLocation {
   CORREDORES
 }
 
+enum OccurrenceStudentRole {
+  AUTOR
+  VITIMA
+  TESTEMUNHA
+}
+
 model User {
   id           String        @id @default(cuid())
   email        String        @unique
@@ -91,6 +97,7 @@ model Occurrence {
   schoolClass     SchoolClass        @relation(fields: [classId], references: [id])
   studentId       String
   student         Student            @relation(fields: [studentId], references: [id])
+  studentRoles    OccurrenceStudentRole[]
   registeredAt    DateTime           @default(now())
   occurredAt      DateTime
   location        OccurrenceLocation

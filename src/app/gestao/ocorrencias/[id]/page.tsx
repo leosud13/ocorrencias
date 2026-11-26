@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { formatDateTimeBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
+import { formatOccurrenceStudentRoles } from "@/lib/occurrence-student-roles";
 import { ManageOccurrencePanel } from "@/components/manage-occurrence-panel";
 import { OccurrenceActivityPanel } from "@/components/occurrence-activity-panel";
 import { EditRegisteredAtPanel } from "@/components/edit-registered-at-panel";
@@ -93,6 +94,10 @@ export default async function GestaoOccurrenceDetailPage({ params }: Props) {
           <dd className="text-sm text-slate-900">
             {o.student.name} <span className="text-slate-500">(RA {o.student.ra})</span>
           </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-medium uppercase text-slate-500">Condição do aluno</dt>
+          <dd className="text-sm text-slate-900">{formatOccurrenceStudentRoles(o.studentRoles)}</dd>
         </div>
         <div>
           <dt className="text-xs font-medium uppercase text-slate-500">Local</dt>

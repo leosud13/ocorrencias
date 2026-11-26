@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { OccurrenceLocation, OccurrenceReason, Prisma, UserRole } from "@prisma/client";
+import {
+  OccurrenceLocation,
+  OccurrenceReason,
+  OccurrenceStudentRole,
+  Prisma,
+  UserRole,
+} from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { generateControlNumber } from "@/lib/control-number";
@@ -12,6 +18,7 @@ import {
 
 const REASONS = new Set<string>(Object.values(OccurrenceReason));
 const LOCATIONS = new Set<string>(Object.values(OccurrenceLocation));
+const STUDENT_ROLES = new Set<string>(Object.values(OccurrenceStudentRole));
 
 const PAGE_SIZE = 20;
 
@@ -81,10 +88,25 @@ export async function POST(req: Request) {
   const location = String(form.get("location") ?? "");
   const details = form.get("details") ? String(form.get("details")) : null;
   const occurredAtRaw = String(form.get("occurredAt") ?? "");
+  const studentRoles = Array.from(
+    new Set(
+      form
+        .getAll("studentRoles")
+        .map((value) => String(value))
+        .filter((value) => STUDENT_ROLES.has(value)),
+    ),
+  ) as OccurrenceStudentRole[];
 
   if (!classId || !studentId || !reason || !location || !occurredAtRaw) {
     return NextResponse.json(
       { error: "Preencha turma, aluno, local, motivo e data da ocorrência." },
+      { status: 400 },
+    );
+  }
+
+  if (studentRoles.length === 0) {
+    return NextResponse.json(
+      { error: "Marque a condição do aluno: autor, vítima ou testemunha." },
       { status: 400 },
     );
   }
@@ -130,6 +152,7 @@ export async function POST(req: Request) {
         authorId: session.user.id,
         classId,
         studentId,
+        studentRoles,
         occurredAt,
         location: location as OccurrenceLocation,
         reason: reason as OccurrenceReason,

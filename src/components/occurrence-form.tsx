@@ -6,10 +6,12 @@ import { StudentNameSearch } from "@/components/student-name-search";
 import { dateTimeInputBRToISOString, formatDateTimeInputBR } from "@/lib/date-time";
 import { OCCURRENCE_REASON_OPTIONS } from "@/lib/occurrence-reasons";
 import { OCCURRENCE_LOCATION_OPTIONS } from "@/lib/occurrence-locations";
+import { OCCURRENCE_STUDENT_ROLE_OPTIONS } from "@/lib/occurrence-student-roles";
 import {
   QuickOccurrencesModal,
   applyQuickOccurrenceTemplate,
 } from "@/components/quick-occurrences-modal";
+import type { OccurrenceStudentRole } from "@prisma/client";
 
 type Classe = { id: string; name: string };
 
@@ -29,6 +31,7 @@ export function OccurrenceForm({
   const [classId, setClassId] = useState("");
   const [studentId, setStudentId] = useState("");
   const [studentLabel, setStudentLabel] = useState("");
+  const [studentRoles, setStudentRoles] = useState<OccurrenceStudentRole[]>([]);
   const [reason, setReason] = useState("");
   const [reasonOther, setReasonOther] = useState("");
   const [location, setLocation] = useState("");
@@ -53,6 +56,10 @@ export function OccurrenceForm({
       setError("Selecione o aluno na lista de sugestões.");
       return;
     }
+    if (studentRoles.length === 0) {
+      setError("Marque a condição do aluno: autor, vítima ou testemunha.");
+      return;
+    }
     if (reason === "OUTROS" && !reasonOther.trim()) {
       setError("Descreva o motivo em Outros.");
       return;
@@ -61,6 +68,7 @@ export function OccurrenceForm({
     const fd = new FormData();
     fd.set("classId", classId);
     fd.set("studentId", studentId);
+    for (const role of studentRoles) fd.append("studentRoles", role);
     fd.set("reason", reason);
     if (reason === "OUTROS") fd.set("reasonOther", reasonOther.trim());
     fd.set("location", location);
@@ -100,6 +108,7 @@ export function OccurrenceForm({
               setClassId(e.target.value);
               setStudentId("");
               setStudentLabel("");
+              setStudentRoles([]);
             }}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           >
@@ -124,6 +133,38 @@ export function OccurrenceForm({
             setStudentLabel(s?.name ?? "");
           }}
         />
+
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-slate-700">
+            Condição do aluno <span className="text-red-600">*</span>
+          </legend>
+          <div className="flex flex-wrap gap-4">
+            {OCCURRENCE_STUDENT_ROLE_OPTIONS.map((option) => {
+              const checked = studentRoles.includes(option.value);
+              return (
+                <label key={option.value} className="inline-flex items-center gap-2 text-sm text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={!studentId}
+                    onChange={(e) => {
+                      setStudentRoles((prev) =>
+                        e.target.checked
+                          ? [...prev, option.value]
+                          : prev.filter((role) => role !== option.value),
+                      );
+                    }}
+                    className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  />
+                  {option.label}
+                </label>
+              );
+            })}
+          </div>
+          {!studentId && (
+            <p className="text-xs text-slate-500">Selecione o aluno para marcar a condição.</p>
+          )}
+        </fieldset>
 
         <div>
           <label className="block text-sm font-medium text-slate-700">Data da ocorrência</label>
