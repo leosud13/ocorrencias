@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
+import { OccurrenceReason, Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { rm } from "fs/promises";
 import path from "path";
@@ -9,11 +9,14 @@ import {
   canContributeToOccurrence,
   canDeleteOccurrence,
   canManageOccurrenceTratativa,
+  canRecategorizeOccurrence,
   canViewOccurrence,
 } from "@/lib/occurrence-access";
 import { dateTimeInputBRToISOString } from "@/lib/date-time";
 import { hasActionTaken } from "@/lib/occurrence-notifications";
 import { appendOccurrenceAction, occurrenceActionInclude } from "@/lib/occurrence-actions";
+
+const REASONS = new Set<string>(Object.values(OccurrenceReason));
 
 type Params = { params: { id: string } };
 
@@ -75,6 +78,8 @@ export async function PATCH(req: Request, { params }: Params) {
     parentEmail?: string | null;
     actionTaken?: string | null;
     registeredAt?: string | null;
+    reason?: string | null;
+    reasonOther?: string | null;
   };
 
   const data: Prisma.OccurrenceUpdateInput = {};
@@ -84,6 +89,7 @@ export async function PATCH(req: Request, { params }: Params) {
     body.parentEmail !== undefined ||
     body.actionTaken !== undefined;
   const hasRegisteredAt = body.registeredAt !== undefined;
+  const hasReason = body.reason !== undefined;
 
   if (hasRegisteredAt) {
     if (!canContributeToOccurrence(session.user, existing)) {
@@ -119,7 +125,32 @@ export async function PATCH(req: Request, { params }: Params) {
     if (body.parentEmail !== undefined) data.parentEmail = body.parentEmail?.trim() || null;
   }
 
-  if (!hasRegisteredAt && !hasTratativa) {
+  if (hasReason) {
+    if (!canRecategorizeOccurrence(session.user)) {
+      return NextResponse.json(
+        { error: "Somente a gestão pode alterar o motivo da ocorrência." },
+        { status: 403 },
+      );
+    }
+
+    const reason = String(body.reason ?? "").trim();
+    if (!REASONS.has(reason)) {
+      return NextResponse.json({ error: "Motivo inválido." }, { status: 400 });
+    }
+
+    const reasonOtherRaw = String(body.reasonOther ?? "").trim();
+    if (reason === OccurrenceReason.OUTROS && !reasonOtherRaw) {
+      return NextResponse.json(
+        { error: "Descreva o motivo quando selecionar Outros." },
+        { status: 400 },
+      );
+    }
+
+    data.reason = reason as OccurrenceReason;
+    data.reasonOther = reason === OccurrenceReason.OUTROS ? reasonOtherRaw : null;
+  }
+
+  if (!hasRegisteredAt && !hasTratativa && !hasReason) {
     return NextResponse.json({ error: "Nenhum campo para atualizar." }, { status: 400 });
   }
 

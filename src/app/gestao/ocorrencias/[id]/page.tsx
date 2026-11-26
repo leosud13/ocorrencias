@@ -4,14 +4,18 @@ import { getSession } from "@/lib/session";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatDateTimeBR } from "@/lib/date-time";
-import { OCCURRENCE_REASON_LABELS } from "@/lib/occurrence-reasons";
 import { OCCURRENCE_LOCATION_LABELS } from "@/lib/occurrence-locations";
 import { formatOccurrenceStudentRoles } from "@/lib/occurrence-student-roles";
 import { ManageOccurrencePanel } from "@/components/manage-occurrence-panel";
 import { OccurrenceActivityPanel } from "@/components/occurrence-activity-panel";
 import { EditRegisteredAtPanel } from "@/components/edit-registered-at-panel";
+import { EditOccurrenceReasonPanel } from "@/components/edit-occurrence-reason-panel";
 import { DeleteOccurrenceButton } from "@/components/delete-occurrence-button";
-import { canContributeToOccurrence, canViewOccurrence } from "@/lib/occurrence-access";
+import {
+  canContributeToOccurrence,
+  canRecategorizeOccurrence,
+  canViewOccurrence,
+} from "@/lib/occurrence-access";
 
 type Props = { params: { id: string } };
 
@@ -103,11 +107,15 @@ export default async function GestaoOccurrenceDetailPage({ params }: Props) {
           <dt className="text-xs font-medium uppercase text-slate-500">Local</dt>
           <dd className="text-sm text-slate-900">{OCCURRENCE_LOCATION_LABELS[o.location]}</dd>
         </div>
-        <div>
+        <div className="sm:col-span-2">
           <dt className="text-xs font-medium uppercase text-slate-500">Motivo</dt>
-          <dd className="text-sm text-slate-900">
-            {OCCURRENCE_REASON_LABELS[o.reason]}
-            {o.reason === "OUTROS" && o.reasonOther ? `: ${o.reasonOther}` : ""}
+          <dd className="mt-1">
+            <EditOccurrenceReasonPanel
+              occurrenceId={o.id}
+              initialReason={o.reason}
+              initialReasonOther={o.reasonOther}
+              canEdit={canRecategorizeOccurrence(session.user)}
+            />
           </dd>
         </div>
         <div className="sm:col-span-2">

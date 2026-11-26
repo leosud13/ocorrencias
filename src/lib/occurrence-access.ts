@@ -28,6 +28,10 @@ export function canManageOccurrenceTratativa(user: SessionUser): boolean {
   return !user.isBlocked && user.role === UserRole.GESTAO;
 }
 
+export function canRecategorizeOccurrence(user: SessionUser): boolean {
+  return !user.isBlocked && user.role === UserRole.GESTAO;
+}
+
 export function canDeleteOccurrence(user: SessionUser): boolean {
   return !user.isBlocked && user.role === UserRole.GESTAO;
 }
